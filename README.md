@@ -14,11 +14,13 @@ Use links instead.
 
 # Maubot operator
 
-A Juju charm deploying and managing Maubot on Kubernetes.
+A Juju charm deploying and managing [Maubot](https://github.com/maubot/maubot) on Kubernetes.
 
-Maubot is a plugin-based Matrix bot system written in Python.
+Maubot is a plugin-based [Matrix](https://matrix.org/) bot system written in Python.
 
 ## Architecture
+
+The charm has the following architecture:
 
 ```mermaid
 graph TD;
