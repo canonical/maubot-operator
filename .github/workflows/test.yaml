@@ -9,6 +9,5 @@ jobs:
     secrets: inherit
     with:
       charmcraft-channel: latest/edge
-      juju-channel: 3.5/stable
       self-hosted-runner: true
       self-hosted-runner-label: "edge"
