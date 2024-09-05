@@ -61,7 +61,7 @@ class MaubotCharm(ops.CharmBase):
                 MAUBOT_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "maubot",
-                    "command": 'bash -c "hello -t; sleep 10"',
+                    "command": 'bash -c "python3 -c "import maubot"; sleep 10"',
                     "startup": "enabled",
                 }
             },
