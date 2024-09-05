@@ -4,16 +4,29 @@
 name: maubot
 summary: Maubot rock
 description: Maubot OCI image for the Maubot charm
-version: "1.0"
+version: "0.5.0"
 license: Apache-2.0
 
-base: ubuntu@22.04
-build-base: ubuntu@22.04
+base: ubuntu@24.04
+build-base: ubuntu@24.04
 platforms:
   amd64:  
 
+environment: 
+  PYTHONPATH: /opt/maubot/python/dist
+
 parts:
-  hello:
+  maubot:
     plugin: nil
-    stage-packages:
-      - hello
+    build-packages:
+      - wget
+      - ssl-cert
+      - git
+    overlay-packages:
+      - python3-pip
+    overlay-script: |
+      mkdir -p $CRAFT_PART_INSTALL/opt/maubot/python/dist
+      pip install --target=${CRAFT_PART_INSTALL}/opt/maubot/python/dist  'maubot==0.5.0'
+      rm usr/bin/pip*
+    stage:
+      - opt/maubot/python/dist
