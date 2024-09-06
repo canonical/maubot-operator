@@ -10,23 +10,16 @@ license: Apache-2.0
 base: ubuntu@24.04
 build-base: ubuntu@24.04
 platforms:
-  amd64:  
+  amd64:
 
-environment: 
-  PYTHONPATH: /opt/maubot/python/dist
+environment:
+  PYTHONPATH: /usr/lib/python3.12/site-packages/
 
 parts:
   maubot:
-    plugin: nil
-    build-packages:
-      - wget
-      - ssl-cert
-      - git
-    overlay-packages:
-      - python3-pip
-    overlay-script: |
-      mkdir -p $CRAFT_PART_INSTALL/opt/maubot/python/dist
-      pip install --target=${CRAFT_PART_INSTALL}/opt/maubot/python/dist  'maubot==0.5.0'
-      rm usr/bin/pip*
-    stage:
-      - opt/maubot/python/dist
+    plugin: python
+    source: .
+    stage-packages:
+      - python3-venv
+    python-packages:
+      - maubot==0.5.0
