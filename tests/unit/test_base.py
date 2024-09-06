@@ -35,7 +35,7 @@ class TestCharm(unittest.TestCase):
                 "maubot": {
                     "override": "replace",
                     "summary": "maubot",
-                    "command": 'bash -c "python3 -c "import maubot"; sleep 10"',
+                    "command": "bash -c \"python3 -c 'import maubot'; sleep 10\"",
                     "startup": "enabled",
                 }
             },
