@@ -3,23 +3,21 @@
 <a href="../src/charm.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `charm.py`
-Charm the service. 
 
-Refer to the following post for a quick-start guide that will help you develop a new k8s charm using the Operator Framework: 
-
-https://discourse.charmhub.io/t/4208 
+Maubot charm service. 
 
 **Global Variables**
 ---------------
-- **VALID_LOG_LEVELS**
+- **MAUBOT_SERVICE_NAME**
+- **MAUBOT_CONTAINER_NAME**
 
 
 ---
 
-## <kbd>class</kbd> `IsCharmsTemplateCharm`
-Charm the service. 
+## <kbd>class</kbd> `MaubotCharm`
+Maubot charm. 
 
-<a href="../src/charm.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
