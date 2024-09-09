@@ -9,6 +9,7 @@ header:
     - '**'
   paths-ignore:
     - '.github/**'
+    - '.trivyignore'
     - '**/*.json'
     - '**/*.md'
     - '**/*.txt'
