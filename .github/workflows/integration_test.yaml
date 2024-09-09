@@ -13,4 +13,3 @@ jobs:
       juju-channel: 3.4/stable
       self-hosted-runner: true
       self-hosted-runner-label: "edge"
-      tmate-debug: true
