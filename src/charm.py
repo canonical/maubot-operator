@@ -11,6 +11,7 @@ import logging
 import typing
 
 import ops
+import yaml
 from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
     DatabaseEndpointsChangedEvent,
@@ -43,12 +44,39 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.postgresql.on.database_created, self._on_database_created)
         self.framework.observe(self.postgresql.on.endpoints_changed, self._on_endpoints_changed)
 
+    def _configure_maubot(self, container: ops.Container) -> None:
+        """Configure maubot.
+
+        Args:
+            container: Container of the charm.
+
+        Raises:
+            ExecError: something went wrong executing command.
+            PathError: error while interacting with path.
+        """
+        commands = [
+            ["cp", "--update=none", "/example-config.yaml", "/data/config.yaml"],
+            ["mkdir", "-p", "/data/plugins", "/data/trash", "/data/dbs"],
+        ]
+        try:
+            for command in commands:
+                process = container.exec(command, combine_stderr=True)
+                process.wait()
+            config_content = str(container.pull("/data/config.yaml", encoding="utf-8").read())
+            config = yaml.safe_load(config_content)
+            config["database"] = self._get_postgresql_credentials()
+            container.push("/data/config.yaml", yaml.safe_dump(config))
+        except (ops.pebble.ExecError, ops.pebble.PathError) as exc:
+            logger.exception("Failed to execute command: %r", exc)
+            raise
+
     def _reconcile(self) -> None:
         """Reconcile workload configuration."""
         self.unit.status = ops.MaintenanceStatus()
         container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
         if not container.can_connect():
             return
+        self._configure_maubot(container)
         container.add_layer(MAUBOT_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
@@ -94,12 +122,12 @@ class MaubotCharm(ops.CharmBase):
         """Return a dictionary representing a Pebble layer."""
         return {
             "summary": "maubot layer",
-            "description": "pebble config layer for httpbin",
+            "description": "pebble config layer for maubot",
             "services": {
                 MAUBOT_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "maubot",
-                    "command": "bash -c \"python3 -c 'import maubot'; sleep 10\"",
+                    "command": "bash -c 'python3 -m maubot -c /data/config.yaml'",
                     "startup": "enabled",
                 }
             },

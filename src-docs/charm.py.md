@@ -16,7 +16,7 @@ Maubot charm service.
 ## <kbd>class</kbd> `MaubotCharm`
 Maubot charm. 
 
-<a href="../src/charm.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
