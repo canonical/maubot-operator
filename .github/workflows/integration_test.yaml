@@ -11,5 +11,5 @@ jobs:
       channel: 1.28-strict/stable
       charmcraft-channel: latest/edge
       juju-channel: 3.4/stable
-      self-hosted-runner: true
+      self-hosted-runner: false
       self-hosted-runner-label: "edge"

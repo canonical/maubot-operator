@@ -32,13 +32,11 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.on.maubot_pebble_ready, self._on_maubot_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
-    def _on_maubot_pebble_ready(self, event: ops.PebbleReadyEvent) -> None:
-        """Handle maubot pebble ready event.
-
-        Args:
-            event: event triggering the handler.
-        """
-        container = event.workload
+    def _on_maubot_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
+        """Handle maubot pebble ready event."""
+        container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
+        if not container.can_connect():
+            return
         container.add_layer(MAUBOT_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
@@ -47,6 +45,8 @@ class MaubotCharm(ops.CharmBase):
         """Handle changed configuration."""
         self.unit.status = ops.MaintenanceStatus()
         container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
+        if not container.can_connect():
+            return
         container.add_layer(MAUBOT_SERVICE_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
@@ -61,7 +61,7 @@ class MaubotCharm(ops.CharmBase):
                 MAUBOT_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "maubot",
-                    "command": 'bash -c "hello -t; sleep 10"',
+                    "command": "bash -c \"python3 -c 'import maubot'; sleep 10\"",
                     "startup": "enabled",
                 }
             },
