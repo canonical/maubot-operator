@@ -25,6 +25,10 @@ MAUBOT_SERVICE_NAME = "maubot"
 MAUBOT_CONTAINER_NAME = "maubot"
 
 
+class MissingPostgreSQLRelationDataError(Exception):
+    """Custom exception to be raised in case of malformed/missing Postgresql relation data."""
+
+
 class MaubotCharm(ops.CharmBase):
     """Maubot charm."""
 
@@ -76,7 +80,11 @@ class MaubotCharm(ops.CharmBase):
         container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
         if not container.can_connect():
             return
-        self._configure_maubot(container)
+        try:
+            self._configure_maubot(container)
+        except MissingPostgreSQLRelationDataError:
+            self.unit.status = ops.BlockedStatus("postgresql integration is required")
+            return
         container.add_layer(MAUBOT_CONTAINER_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
@@ -99,21 +107,24 @@ class MaubotCharm(ops.CharmBase):
         self._reconcile()
 
     # Relation data handlers
-    def _get_postgresql_credentials(self) -> str | None:
+    def _get_postgresql_credentials(self) -> str:
         """Get postgresql credentials from the postgresql integration.
 
         Returns:
             postgresql credentials.
+
+        Raises:
+            MissingPostgreSQLRelationDataError: if relation is not found.
         """
         relation = self.model.get_relation("postgresql")
         if not relation or not relation.app:
-            return None
+            raise MissingPostgreSQLRelationDataError("No postgresql relation data")
         endpoint = self.postgresql.fetch_relation_field(relation.id, "endpoints")
         database = self.postgresql.fetch_relation_field(relation.id, "database")
         username = self.postgresql.fetch_relation_field(relation.id, "username")
         password = self.postgresql.fetch_relation_field(relation.id, "password")
         if not all((endpoint, database, username, password)):
-            return None
+            raise MissingPostgreSQLRelationDataError("Missing mandatory relation data")
         return f"postgresql://{username}:{password}@{endpoint}/{database}"
 
     # Properties

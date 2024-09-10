@@ -9,6 +9,44 @@ import ops
 import ops.testing
 
 
+def set_postgresql_integration(harness) -> None:
+    """Set postgresql integration.
+
+    Args:
+        harness: harness instance.
+    """
+    relation_data = {
+        "database": "maubot",
+        "endpoints": "dbhost:5432",
+        "password": "somepasswd",  # nosec
+        "username": "someuser",
+    }
+    harness.db_relation_id = (  # pylint: disable=attribute-defined-outside-init
+        harness.add_relation("postgresql", "postgresql")
+    )
+    harness.add_relation_unit(harness.db_relation_id, "postgresql/0")
+    harness.update_relation_data(
+        harness.db_relation_id,
+        "postgresql",
+        relation_data,
+    )
+
+
+def test_maubot_pebble_ready_postgresql_required(harness):
+    """
+    arrange: initialize the testing harness with handle_exec and
+        config.yaml file.
+    act: retrieve the pebble plan for maubot.
+    assert: ensure the maubot pebble plan matches the expectations,
+        the service is running and the charm is active.
+    """
+    harness.begin()
+
+    harness.container_pebble_ready("maubot")
+
+    assert harness.model.unit.status == ops.BlockedStatus("postgresql integration is required")
+
+
 def test_maubot_pebble_ready(harness):
     """
     arrange: initialize the testing harness with handle_exec and
@@ -18,6 +56,7 @@ def test_maubot_pebble_ready(harness):
         the service is running and the charm is active.
     """
     harness.begin()
+    set_postgresql_integration(harness)
     expected_plan = {
         "services": {
             "maubot": {
@@ -45,23 +84,8 @@ def test_database_created(harness):
     assert: postgresql credentials are set as expected.
     """
     harness.begin_with_initial_hooks()
-    assert harness.charm._get_postgresql_credentials() is None
 
-    relation_data = {
-        "database": "maubot",
-        "endpoints": "dbhost:5432",
-        "password": "somepasswd",  # nosec
-        "username": "someuser",
-    }
-    harness.db_relation_id = (  # pylint: disable=attribute-defined-outside-init
-        harness.add_relation("postgresql", "postgresql")
-    )
-    harness.add_relation_unit(harness.db_relation_id, "postgresql/0")
-    harness.update_relation_data(
-        harness.db_relation_id,
-        "postgresql",
-        relation_data,
-    )
+    set_postgresql_integration(harness)
 
     assert (
         harness.charm._get_postgresql_credentials()
