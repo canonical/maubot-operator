@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, duplicate-code
 
 """Unit tests."""
 
@@ -64,6 +64,7 @@ def test_maubot_pebble_ready(harness):
                 "summary": "maubot",
                 "command": "bash -c 'python3 -m maubot -c /data/config.yaml'",
                 "startup": "enabled",
+                "working-dir": "/data",
             }
         },
     }
