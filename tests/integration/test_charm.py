@@ -21,7 +21,7 @@ async def test_build_and_deploy(
     """
     arrange: set up the test Juju model.
     act: build and deploy the Maubot charm .
-    assert: the Maubot charm becomes active.
+    assert: the Maubot charm becomes blocked (postgresql integration is required)
     """
     charm = pytestconfig.getoption("--charm-file")
     maubot_image = pytestconfig.getoption("--maubot-image")
@@ -30,4 +30,4 @@ async def test_build_and_deploy(
         charm = await ops_test.build_charm(".")
     assert ops_test.model
     await ops_test.model.deploy(f"./{charm}", resources={"maubot-image": maubot_image})
-    await ops_test.model.wait_for_idle(timeout=600, status="active")
+    await ops_test.model.wait_for_idle(timeout=600, status="blocked")

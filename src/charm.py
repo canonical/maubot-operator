@@ -140,6 +140,7 @@ class MaubotCharm(ops.CharmBase):
                     "summary": "maubot",
                     "command": "bash -c 'python3 -m maubot -c /data/config.yaml'",
                     "startup": "enabled",
+                    "working-dir": "/data"
                 }
             },
         }
