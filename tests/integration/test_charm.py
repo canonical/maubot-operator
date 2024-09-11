@@ -33,7 +33,12 @@ async def test_build_and_deploy(
     nginx_ingress_integrator = await ops_test.model.deploy(
         "nginx-ingress-integrator",
         channel="edge",
-        config={"path-routes": "/", "service-hostname": "maubot.local"},
+        config={
+            "path-routes": "/",
+            "service-hostname": "maubot.local",
+            "service-namespace": ops_test.model.name,
+            "service-name": "maubot",
+        },
         trust=True,
     )
     await ops_test.model.add_relation(maubot.name, nginx_ingress_integrator.name)
