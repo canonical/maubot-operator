@@ -21,12 +21,12 @@ def set_postgresql_integration(harness) -> None:
         "password": "somepasswd",  # nosec
         "username": "someuser",
     }
-    harness.db_relation_id = (  # pylint: disable=attribute-defined-outside-init
-        harness.add_relation("postgresql", "postgresql")
+    db_relation_id = harness.add_relation(  # pylint: disable=attribute-defined-outside-init
+        "postgresql", "postgresql"
     )
-    harness.add_relation_unit(harness.db_relation_id, "postgresql/0")
+    harness.add_relation_unit(db_relation_id, "postgresql/0")
     harness.update_relation_data(
-        harness.db_relation_id,
+        db_relation_id,
         "postgresql",
         relation_data,
     )
@@ -36,11 +36,10 @@ def test_maubot_pebble_ready_postgresql_required(harness):
     """
     arrange: initialize the testing harness with handle_exec and
         config.yaml file.
-    act: retrieve the pebble plan for maubot.
-    assert: ensure the maubot pebble plan matches the expectations,
-        the service is running and the charm is active.
+    act: emit container pebble ready event.
+    assert: Charm is blocked due to the missing PostgreSQL integration.
     """
-    harness.begin()
+    harness.begin_with_initial_hooks()
 
     harness.container_pebble_ready("maubot")
 
@@ -62,7 +61,7 @@ def test_maubot_pebble_ready(harness):
             "maubot": {
                 "override": "replace",
                 "summary": "maubot",
-                "command": "bash -c 'python3 -m maubot -c /data/config.yaml'",
+                "command": "python3 -m maubot -c /data/config.yaml",
                 "startup": "enabled",
                 "working-dir": "/data",
             }

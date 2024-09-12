@@ -138,7 +138,7 @@ class MaubotCharm(ops.CharmBase):
                 MAUBOT_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "maubot",
-                    "command": "bash -c 'python3 -m maubot -c /data/config.yaml'",
+                    "command": "python3 -m maubot -c /data/config.yaml",
                     "startup": "enabled",
                     "working-dir": "/data",
                 }
