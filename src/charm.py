@@ -119,13 +119,15 @@ class MaubotCharm(ops.CharmBase):
         relation = self.model.get_relation("postgresql")
         if not relation or not relation.app:
             raise MissingPostgreSQLRelationDataError("No postgresql relation data")
-        endpoint = self.postgresql.fetch_relation_field(relation.id, "endpoints")
+        endpoints = self.postgresql.fetch_relation_field(relation.id, "endpoints")
         database = self.postgresql.fetch_relation_field(relation.id, "database")
         username = self.postgresql.fetch_relation_field(relation.id, "username")
         password = self.postgresql.fetch_relation_field(relation.id, "password")
-        if not all((endpoint, database, username, password)):
+
+        primary_endpoint = endpoints.split(",")[0]
+        if not all((primary_endpoint, database, username, password)):
             raise MissingPostgreSQLRelationDataError("Missing mandatory relation data")
-        return f"postgresql://{username}:{password}@{endpoint}/{database}"
+        return f"postgresql://{username}:{password}@{primary_endpoint}/{database}"
 
     # Properties
     @property
