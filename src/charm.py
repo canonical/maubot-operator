@@ -20,8 +20,7 @@ from ops import pebble
 
 logger = logging.getLogger(__name__)
 
-MAUBOT_SERVICE_NAME = "maubot"
-MAUBOT_CONTAINER_NAME = "maubot"
+MAUBOT_NAME = "maubot"
 
 
 class MaubotCharm(ops.CharmBase):
@@ -42,38 +41,38 @@ class MaubotCharm(ops.CharmBase):
 
     def _on_maubot_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
         """Handle maubot pebble ready event."""
-        container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
+        container = self.unit.get_container(MAUBOT_NAME)
         if not container.can_connect():
             return
-        container.add_layer(MAUBOT_CONTAINER_NAME, self._pebble_layer, combine=True)
+        container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle changed configuration."""
         self.unit.status = ops.MaintenanceStatus()
-        container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
+        container = self.unit.get_container(MAUBOT_NAME)
         if not container.can_connect():
             return
-        container.add_layer(MAUBOT_SERVICE_NAME, self._pebble_layer, combine=True)
+        container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
     def _on_ingress_ready(self, _: IngressPerAppReadyEvent) -> None:
         """Handle ingress ready event."""
-        container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
+        container = self.unit.get_container(MAUBOT_NAME)
         if not container.can_connect():
             return
-        container.add_layer(MAUBOT_CONTAINER_NAME, self._pebble_layer, combine=True)
+        container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
     def _on_ingress_revoked(self, _: IngressPerAppRevokedEvent) -> None:
         """Handle ingress revoked event."""
-        container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
+        container = self.unit.get_container(MAUBOT_NAME)
         if not container.can_connect():
             return
-        container.add_layer(MAUBOT_CONTAINER_NAME, self._pebble_layer, combine=True)
+        container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
@@ -84,7 +83,7 @@ class MaubotCharm(ops.CharmBase):
             "summary": "maubot layer",
             "description": "pebble config layer for httpbin",
             "services": {
-                MAUBOT_SERVICE_NAME: {
+                MAUBOT_NAME: {
                     "override": "replace",
                     "summary": "maubot",
                     "command": "bash -c \"python3 -c 'import maubot'; sleep 10\"",
