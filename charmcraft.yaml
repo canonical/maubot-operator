@@ -17,10 +17,15 @@ resources:
   maubot-image:
     type: oci-image
     description: OCI image for maubot
+  maubot-nginx-image:
+    type: oci-image
+    description: OCI image for nginx Maubot
 
 containers:
   maubot:
     resource: maubot-image
+  maubot-nginx:
+    resource: maubot-nginx-image
 
 type: charm
 base: ubuntu@24.04

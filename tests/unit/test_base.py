@@ -37,14 +37,41 @@ class TestCharm(unittest.TestCase):
                     "summary": "maubot",
                     "command": "bash -c \"python3 -c 'import maubot'; sleep 10\"",
                     "startup": "enabled",
-                }
+                },
             },
         }
 
         self.harness.container_pebble_ready("maubot")
+        self.harness.container_pebble_ready("maubot-nginx")
 
         updated_plan = self.harness.get_container_pebble_plan("maubot").to_dict()
         self.assertEqual(expected_plan, updated_plan)
         service = self.harness.model.unit.get_container("maubot").get_service("maubot")
+        self.assertTrue(service.is_running())
+        self.assertEqual(self.harness.model.unit.status, ops.ActiveStatus())
+
+    def test_maubot_nginx_pebble_ready(self):
+        """
+        arrange: initialize the testing harness.
+        act: retrieve the pebble plan for maubot nginx.
+        assert: ensure the maubot nginx pebble plan matches the expectations,
+            the service is running and the charm is active.
+        """
+        expected_plan = {
+            "services": {
+                "maubot-nginx": {
+                    "override": "replace",
+                    "summary": "Maubot NGINX service",
+                    "command": "/usr/sbin/nginx",
+                    "startup": "enabled",
+                },
+            },
+        }
+
+        self.harness.container_pebble_ready("maubot-nginx")
+
+        updated_plan = self.harness.get_container_pebble_plan("maubot-nginx").to_dict()
+        self.assertEqual(expected_plan, updated_plan)
+        service = self.harness.model.unit.get_container("maubot-nginx").get_service("maubot-nginx")
         self.assertTrue(service.is_running())
         self.assertEqual(self.harness.model.unit.status, ops.ActiveStatus())

@@ -9,6 +9,7 @@ Maubot charm service.
 ---------------
 - **MAUBOT_SERVICE_NAME**
 - **MAUBOT_CONTAINER_NAME**
+- **NGINX_NAME**
 
 
 ---
@@ -16,7 +17,7 @@ Maubot charm service.
 ## <kbd>class</kbd> `MaubotCharm`
 Maubot charm. 
 
-<a href="../src/charm.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

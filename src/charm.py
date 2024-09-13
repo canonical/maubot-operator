@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 MAUBOT_SERVICE_NAME = "maubot"
 MAUBOT_CONTAINER_NAME = "maubot"
+NGINX_NAME = "maubot-nginx"
 
 
 class MaubotCharm(ops.CharmBase):
@@ -30,6 +31,9 @@ class MaubotCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.framework.observe(self.on.maubot_pebble_ready, self._on_maubot_pebble_ready)
+        self.framework.observe(
+            self.on.maubot_nginx_pebble_ready, self._on_maubot_nginx_pebble_ready
+        )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
     def _on_maubot_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
@@ -51,6 +55,15 @@ class MaubotCharm(ops.CharmBase):
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
+    def _on_maubot_nginx_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
+        """Handle nginx pebble ready event."""
+        container = self.unit.get_container(NGINX_NAME)
+        if not container.can_connect():
+            return
+        container.add_layer(NGINX_NAME, self._nginx_pebble_layer, combine=True)
+        container.replan()
+        self.unit.status = ops.ActiveStatus()
+
     @property
     def _pebble_layer(self) -> pebble.LayerDict:
         """Return a dictionary representing a Pebble layer."""
@@ -64,6 +77,22 @@ class MaubotCharm(ops.CharmBase):
                     "command": "bash -c \"python3 -c 'import maubot'; sleep 10\"",
                     "startup": "enabled",
                 }
+            },
+        }
+
+    @property
+    def _nginx_pebble_layer(self) -> pebble.LayerDict:
+        """Return a dictionary representing a Pebble layer."""
+        return {
+            "summary": "Maubot NGINX layer",
+            "description": "Maubot NGINX layer",
+            "services": {
+                NGINX_NAME: {
+                    "override": "replace",
+                    "summary": "Maubot NGINX service",
+                    "command": "/usr/sbin/nginx",
+                    "startup": "enabled",
+                },
             },
         }
 
