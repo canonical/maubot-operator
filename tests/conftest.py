@@ -12,3 +12,4 @@ def pytest_addoption(parser):
     """
     parser.addoption("--charm-file", action="store")
     parser.addoption("--maubot-image", action="store")
+    parser.addoption("--maubot-nginx-image", action="store")
