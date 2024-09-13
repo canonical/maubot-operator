@@ -10,6 +10,7 @@ header:
   paths-ignore:
     - '.github/**'
     - '.trivyignore'
+    - '**/*.conf'
     - '**/*.json'
     - '**/*.md'
     - '**/*.txt'
