@@ -34,7 +34,7 @@ class MaubotCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
-        self.ingress = IngressPerAppRequirer(self, port=29316)
+        self.ingress = IngressPerAppRequirer(self, port=8080)
         self.framework.observe(self.on.maubot_pebble_ready, self._on_maubot_pebble_ready)
         self.framework.observe(
             self.on.maubot_nginx_pebble_ready, self._on_maubot_nginx_pebble_ready

@@ -26,10 +26,15 @@ async def test_build_and_deploy(
     charm = pytestconfig.getoption("--charm-file")
     maubot_image = pytestconfig.getoption("--maubot-image")
     assert maubot_image
+    maubot_nginx_image = pytestconfig.getoption("--maubot-nginx-image")
+    assert maubot_nginx_image
     if not charm:
         charm = await ops_test.build_charm(".")
     assert ops_test.model
-    maubot = await ops_test.model.deploy(f"./{charm}", resources={"maubot-image": maubot_image})
+    maubot = await ops_test.model.deploy(
+        f"./{charm}",
+        resources={"maubot-image": maubot_image, "maubot-nginx-image": maubot_nginx_image},
+    )
     nginx_ingress_integrator = await ops_test.model.deploy(
         "nginx-ingress-integrator",
         channel="edge",
