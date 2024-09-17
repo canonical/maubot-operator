@@ -44,3 +44,7 @@ parts:
 
 assumes:
   - juju >= 3.4
+
+requires:
+  ingress:
+    interface: ingress

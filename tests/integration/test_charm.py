@@ -29,5 +29,17 @@ async def test_build_and_deploy(
     if not charm:
         charm = await ops_test.build_charm(".")
     assert ops_test.model
-    await ops_test.model.deploy(f"./{charm}", resources={"maubot-image": maubot_image})
+    maubot = await ops_test.model.deploy(f"./{charm}", resources={"maubot-image": maubot_image})
+    nginx_ingress_integrator = await ops_test.model.deploy(
+        "nginx-ingress-integrator",
+        channel="edge",
+        config={
+            "path-routes": "/",
+            "service-hostname": "maubot.local",
+            "service-namespace": ops_test.model.name,
+            "service-name": "maubot",
+        },
+        trust=True,
+    )
+    await ops_test.model.add_relation(maubot.name, nginx_ingress_integrator.name)
     await ops_test.model.wait_for_idle(timeout=600, status="active")
