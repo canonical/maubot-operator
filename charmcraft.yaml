@@ -50,3 +50,5 @@ requires:
   postgresql:
     interface: postgresql_client
     limit: 1
+  ingress:
+    interface: ingress

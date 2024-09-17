@@ -17,12 +17,16 @@ from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseEndpointsChangedEvent,
     DatabaseRequires,
 )
+from charms.traefik_k8s.v2.ingress import (
+    IngressPerAppReadyEvent,
+    IngressPerAppRequirer,
+    IngressPerAppRevokedEvent,
+)
 from ops import pebble
 
 logger = logging.getLogger(__name__)
 
-MAUBOT_SERVICE_NAME = "maubot"
-MAUBOT_CONTAINER_NAME = "maubot"
+MAUBOT_NAME = "maubot"
 
 
 class MissingPostgreSQLRelationDataError(Exception):
@@ -39,6 +43,7 @@ class MaubotCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
+        self.ingress = IngressPerAppRequirer(self, port=29316)
         self.postgresql = DatabaseRequires(
             self, relation_name="postgresql", database_name=self.app.name
         )
@@ -47,6 +52,8 @@ class MaubotCharm(ops.CharmBase):
         # Integrations events handlers
         self.framework.observe(self.postgresql.on.database_created, self._on_database_created)
         self.framework.observe(self.postgresql.on.endpoints_changed, self._on_endpoints_changed)
+        self.framework.observe(self.ingress.on.ready, self._on_ingress_ready)
+        self.framework.observe(self.ingress.on.revoked, self._on_ingress_revoked)
 
     def _configure_maubot(self, container: ops.Container) -> None:
         """Configure maubot.
@@ -77,7 +84,7 @@ class MaubotCharm(ops.CharmBase):
     def _reconcile(self) -> None:
         """Reconcile workload configuration."""
         self.unit.status = ops.MaintenanceStatus()
-        container = self.unit.get_container(MAUBOT_CONTAINER_NAME)
+        container = self.unit.get_container(MAUBOT_NAME)
         if not container.can_connect():
             return
         try:
@@ -85,7 +92,7 @@ class MaubotCharm(ops.CharmBase):
         except MissingPostgreSQLRelationDataError:
             self.unit.status = ops.BlockedStatus("postgresql integration is required")
             return
-        container.add_layer(MAUBOT_CONTAINER_NAME, self._pebble_layer, combine=True)
+        container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
         container.replan()
         self.unit.status = ops.ActiveStatus()
 
@@ -95,6 +102,14 @@ class MaubotCharm(ops.CharmBase):
 
     def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle changed configuration."""
+        self._reconcile()
+
+    def _on_ingress_ready(self, _: IngressPerAppReadyEvent) -> None:
+        """Handle ingress ready event."""
+        self._reconcile()
+
+    def _on_ingress_revoked(self, _: IngressPerAppRevokedEvent) -> None:
+        """Handle ingress revoked event."""
         self._reconcile()
 
     # Integrations events handlers
@@ -137,7 +152,7 @@ class MaubotCharm(ops.CharmBase):
             "summary": "maubot layer",
             "description": "pebble config layer for maubot",
             "services": {
-                MAUBOT_SERVICE_NAME: {
+                MAUBOT_NAME: {
                     "override": "replace",
                     "summary": "maubot",
                     "command": "python3 -m maubot -c /data/config.yaml",
