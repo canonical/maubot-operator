@@ -21,6 +21,12 @@ resources:
 containers:
   maubot:
     resource: maubot-image
+    mounts:
+    - storage: data
+      location: /data
+storage:
+  data:
+    type: filesystem
 
 type: charm
 base: ubuntu@24.04
@@ -41,5 +47,8 @@ assumes:
   - juju >= 3.4
 
 requires:
+  postgresql:
+    interface: postgresql_client
+    limit: 1
   ingress:
     interface: ingress

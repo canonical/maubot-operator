@@ -18,6 +18,7 @@ header:
     - '.licenserc.yaml'
     - 'CODEOWNERS'
     - 'LICENSE'
+    - 'lib/**'
     - 'trivy.yaml'
     - 'pyproject.toml'
     - 'zap_rules.tsv'
