@@ -64,7 +64,14 @@ def test_maubot_pebble_ready(harness):
                 "command": "python3 -m maubot -c /data/config.yaml",
                 "startup": "enabled",
                 "working-dir": "/data",
-            }
+            },
+            "nginx": {
+                "override": "replace",
+                "summary": "nginx",
+                "command": "/usr/sbin/nginx",
+                "startup": "enabled",
+                "after": ["maubot"],
+            },
         },
     }
 

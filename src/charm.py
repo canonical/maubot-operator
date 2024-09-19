@@ -144,13 +144,20 @@ class MaubotCharm(ops.CharmBase):
             "summary": "maubot layer",
             "description": "pebble config layer for maubot",
             "services": {
+                "nginx": {
+                    "override": "replace",
+                    "summary": "nginx",
+                    "command": "/usr/sbin/nginx",
+                    "startup": "enabled",
+                    "after": [MAUBOT_NAME],
+                },
                 MAUBOT_NAME: {
                     "override": "replace",
                     "summary": "maubot",
                     "command": "python3 -m maubot -c /data/config.yaml",
                     "startup": "enabled",
                     "working-dir": "/data",
-                }
+                },
             },
         }
 
