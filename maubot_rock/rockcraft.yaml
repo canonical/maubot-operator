@@ -16,7 +16,7 @@ environment:
   PYTHONPATH: /usr/lib/python3.12/site-packages/
 
 parts:
-  add-user:
+  nginx-user:
     plugin: nil
     overlay-script: |
       chmod 755 $CRAFT_OVERLAY/etc
