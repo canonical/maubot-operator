@@ -13,6 +13,14 @@ links:
   contact:
     - https://launchpad.net/~canonical-is-devops
 
+config:
+  options:
+    public-url:
+      description: >-
+        The public URL where the resources are available. The base path is automatically appended to this.
+      type: string
+      default: "https://maubot.local"
+
 resources:
   maubot-image:
     type: oci-image
