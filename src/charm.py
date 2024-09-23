@@ -71,6 +71,7 @@ class MaubotCharm(ops.CharmBase):
         config_content = str(container.pull("/data/config.yaml", encoding="utf-8").read())
         config = yaml.safe_load(config_content)
         config["database"] = self._get_postgresql_credentials()
+        config["server"]["public_url"] = self.config.get("public-url")
         container.push("/data/config.yaml", yaml.safe_dump(config))
 
     def _reconcile(self) -> None:
