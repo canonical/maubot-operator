@@ -63,3 +63,28 @@ async def test_build_and_deploy(
     )
     assert response.status_code == 200
     assert "Maubot Manager" in response.text
+
+
+async def test_create_admin_action(ops_test: OpsTest):
+    """
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the create-admin action.
+    assert: the action results contains a password.
+    """
+    name = "test"
+    assert ops_test.model
+    unit = ops_test.model.applications["penpot"].units[0]
+
+    action = await unit.run_action("create-admin", name=name)
+    await action.wait()
+
+    assert "password" in action.results
+    password = action.results["password"]
+    response = requests.post(
+        "http://127.0.0.1/_matrix/maubot/v1/auth/login",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+        data=f'{{"username":"{name}","password":"{password}"}}',
+    )
+    assert response.status_code == 200
+    assert "token" in response.text

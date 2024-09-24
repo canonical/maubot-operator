@@ -1,6 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+type: charm
 name: maubot
 title: maubot
 description: |
@@ -12,28 +13,17 @@ links:
   source: https://github.com/canonical/maubot-operator
   contact:
     - https://launchpad.net/~canonical-is-devops
-
-resources:
-  maubot-image:
-    type: oci-image
-    description: OCI image for maubot
-
+# build properties
+assumes:
+  - juju >= 3.4
+base: ubuntu@24.04
+build-base: ubuntu@24.04
 containers:
   maubot:
     resource: maubot-image
     mounts:
     - storage: data
       location: /data
-storage:
-  data:
-    type: filesystem
-
-type: charm
-base: ubuntu@24.04
-build-base: ubuntu@24.04
-platforms:
-  amd64:
-
 parts:
   charm:
     build-packages:
@@ -42,13 +32,26 @@ parts:
       - libssl-dev
       - pkg-config
       - rustc
-
-assumes:
-  - juju >= 3.4
-
+platforms:
+  amd64:
 requires:
   postgresql:
     interface: postgresql_client
     limit: 1
   ingress:
     interface: ingress
+resources:
+  maubot-image:
+    type: oci-image
+    description: OCI image for Maubot.
+storage:
+  data:
+    type: filesystem
+# actions
+actions:
+  create-admin:
+    description: Create administrator user to Maubot.
+    params:
+      name:
+        type: string
+        description: The name of the administrator user.

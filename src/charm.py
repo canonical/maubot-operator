@@ -8,6 +8,7 @@
 """Maubot charm service."""
 
 import logging
+import secrets
 import typing
 
 import ops
@@ -27,6 +28,7 @@ from ops import pebble
 logger = logging.getLogger(__name__)
 
 MAUBOT_NAME = "maubot"
+MAUBOT_CONFIGURATION_PATH = "/data/config.yaml"
 
 
 class MissingPostgreSQLRelationDataError(Exception):
@@ -43,49 +45,57 @@ class MaubotCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
+        self.container = self.unit.get_container(MAUBOT_NAME)
         self.ingress = IngressPerAppRequirer(self, port=8080)
         self.postgresql = DatabaseRequires(
             self, relation_name="postgresql", database_name=self.app.name
         )
         self.framework.observe(self.on.maubot_pebble_ready, self._on_maubot_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        # Actions events handlers
+        self.framework.observe(self.on.create_admin_action, self._on_create_admin_action)
         # Integrations events handlers
         self.framework.observe(self.postgresql.on.database_created, self._on_database_created)
         self.framework.observe(self.postgresql.on.endpoints_changed, self._on_endpoints_changed)
         self.framework.observe(self.ingress.on.ready, self._on_ingress_ready)
         self.framework.observe(self.ingress.on.revoked, self._on_ingress_revoked)
 
-    def _configure_maubot(self, container: ops.Container) -> None:
-        """Configure maubot.
+    def _get_configuration(self) -> dict:
+        """Get Maubot configuration content.
 
-        Args:
-            container: Container of the charm.
+        Returns:
+            Maubot configuration file as a dict.
         """
+        config_content = str(
+            self.container.pull(MAUBOT_CONFIGURATION_PATH, encoding="utf-8").read()
+        )
+        return yaml.safe_load(config_content)
+
+    def _configure_maubot(self) -> None:
+        """Configure maubot."""
         commands = [
-            ["cp", "--update=none", "/example-config.yaml", "/data/config.yaml"],
+            ["cp", "--update=none", "/example-config.yaml", MAUBOT_CONFIGURATION_PATH],
             ["mkdir", "-p", "/data/plugins", "/data/trash", "/data/dbs"],
         ]
         for command in commands:
-            process = container.exec(command, combine_stderr=True)
+            process = self.container.exec(command, combine_stderr=True)
             process.wait()
-        config_content = str(container.pull("/data/config.yaml", encoding="utf-8").read())
-        config = yaml.safe_load(config_content)
+        config = self._get_configuration()
         config["database"] = self._get_postgresql_credentials()
-        container.push("/data/config.yaml", yaml.safe_dump(config))
+        self.container.push("/data/config.yaml", yaml.safe_dump(config))
 
     def _reconcile(self) -> None:
         """Reconcile workload configuration."""
         self.unit.status = ops.MaintenanceStatus()
-        container = self.unit.get_container(MAUBOT_NAME)
-        if not container.can_connect():
+        if not self.container.can_connect():
             return
         try:
-            self._configure_maubot(container)
+            self._configure_maubot()
         except MissingPostgreSQLRelationDataError:
             self.unit.status = ops.BlockedStatus("postgresql integration is required")
             return
-        container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
-        container.replan()
+        self.container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
+        self.container.replan()
         self.unit.status = ops.ActiveStatus()
 
     def _on_maubot_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
@@ -103,6 +113,28 @@ class MaubotCharm(ops.CharmBase):
     def _on_ingress_revoked(self, _: IngressPerAppRevokedEvent) -> None:
         """Handle ingress revoked event."""
         self._reconcile()
+
+    # Actions events handlers
+    def _on_create_admin_action(self, event: ops.ActionEvent) -> None:
+        """Handle delete-profile action.
+
+        Args:
+            event: Action event.
+        """
+        if (
+            not self.container.can_connect()
+            or MAUBOT_NAME not in self.container.get_plan().services
+            or not self.container.get_service(MAUBOT_NAME).is_running()
+        ):
+            event.fail("maubot is not ready")
+            return
+        name = event.params["name"]
+        password = secrets.token_urlsafe(10)
+        config = self._get_configuration()
+        config["admins"][name] = password
+        self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
+        self.container.restart(MAUBOT_NAME)
+        event.set_results({"password": password})
 
     # Integrations events handlers
     def _on_database_created(self, _: DatabaseCreatedEvent) -> None:

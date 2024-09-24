@@ -98,3 +98,18 @@ def test_database_created(harness):
         harness.charm._get_postgresql_credentials()
         == "postgresql://someuser:somepasswd@dbhost:5432/maubot"
     )
+
+
+def test_create_admin_action(harness):
+    """
+    arrange: initialize the testing harness and set up all required integration.
+    act: run create-admin charm action.
+    assert: ensure correct commands are executed.
+    """
+    harness.set_leader()
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+
+    action = harness.run_action("create-admin", {"name": "test"})
+
+    assert "password" in action.results

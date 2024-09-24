@@ -8,6 +8,7 @@ Maubot charm service.
 **Global Variables**
 ---------------
 - **MAUBOT_NAME**
+- **MAUBOT_CONFIGURATION_PATH**
 
 
 ---
@@ -15,7 +16,7 @@ Maubot charm service.
 ## <kbd>class</kbd> `MaubotCharm`
 Maubot charm. 
 
-<a href="../src/charm.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
