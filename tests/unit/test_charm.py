@@ -128,4 +128,4 @@ def test_create_admin_action_failed(harness):
     try:
         harness.run_action("create-admin", {"name": "root"})
     except ops.testing.ActionFailed as e:
-        assert e.message == "root is reserved, please choose a different username"
+        assert e.message == "root is reserved, please choose a different name"

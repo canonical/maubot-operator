@@ -123,7 +123,7 @@ class MaubotCharm(ops.CharmBase):
         """
         name = event.params["name"]
         if name == "root":
-            event.fail("root is reserved, please choose a different username")
+            event.fail("root is reserved, please choose a different name")
             return
         if (
             not self.container.can_connect()
