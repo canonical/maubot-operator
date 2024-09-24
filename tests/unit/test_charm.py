@@ -100,11 +100,11 @@ def test_database_created(harness):
     )
 
 
-def test_create_admin_action(harness):
+def test_create_admin_action_success(harness):
     """
     arrange: initialize the testing harness and set up all required integration.
     act: run create-admin charm action.
-    assert: ensure correct commands are executed.
+    assert: ensure password is in the results.
     """
     harness.set_leader()
     harness.begin_with_initial_hooks()
@@ -113,3 +113,19 @@ def test_create_admin_action(harness):
     action = harness.run_action("create-admin", {"name": "test"})
 
     assert "password" in action.results
+
+
+def test_create_admin_action_failed(harness):
+    """
+    arrange: initialize the testing harness and set up all required integration.
+    act: run create-admin charm action with reserved name root.
+    assert: ensure action fails.
+    """
+    harness.set_leader()
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+
+    try:
+        harness.run_action("create-admin", {"name": "root"})
+    except ops.testing.ActionFailed as e:
+        assert e.message == "root is reserved, please choose a different username"

@@ -121,6 +121,10 @@ class MaubotCharm(ops.CharmBase):
         Args:
             event: Action event.
         """
+        name = event.params["name"]
+        if name == "root":
+            event.fail("root is reserved, please choose a different username")
+            return
         if (
             not self.container.can_connect()
             or MAUBOT_NAME not in self.container.get_plan().services
@@ -128,7 +132,6 @@ class MaubotCharm(ops.CharmBase):
         ):
             event.fail("maubot is not ready")
             return
-        name = event.params["name"]
         password = secrets.token_urlsafe(10)
         config = self._get_configuration()
         config["admins"][name] = password
