@@ -73,7 +73,7 @@ async def test_create_admin_action(ops_test: OpsTest):
     """
     name = "test"
     assert ops_test.model
-    unit = ops_test.model.applications["penpot"].units[0]
+    unit = ops_test.model.applications["maubot"].units[0]
 
     action = await unit.run_action("create-admin", name=name)
     await action.wait()
