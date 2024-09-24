@@ -47,7 +47,6 @@ resources:
 storage:
   data:
     type: filesystem
-# actions
 actions:
   create-admin:
     description: Create administrator user to Maubot.

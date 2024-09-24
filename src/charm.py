@@ -82,7 +82,7 @@ class MaubotCharm(ops.CharmBase):
             process.wait()
         config = self._get_configuration()
         config["database"] = self._get_postgresql_credentials()
-        self.container.push("/data/config.yaml", yaml.safe_dump(config))
+        self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
 
     def _reconcile(self) -> None:
         """Reconcile workload configuration."""
