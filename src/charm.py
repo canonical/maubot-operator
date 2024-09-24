@@ -43,7 +43,7 @@ class MaubotCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
-        self.ingress = IngressPerAppRequirer(self, port=29316)
+        self.ingress = IngressPerAppRequirer(self, port=8080)
         self.postgresql = DatabaseRequires(
             self, relation_name="postgresql", database_name=self.app.name
         )
@@ -60,26 +60,18 @@ class MaubotCharm(ops.CharmBase):
 
         Args:
             container: Container of the charm.
-
-        Raises:
-            ExecError: something went wrong executing command.
-            PathError: error while interacting with path.
         """
         commands = [
             ["cp", "--update=none", "/example-config.yaml", "/data/config.yaml"],
             ["mkdir", "-p", "/data/plugins", "/data/trash", "/data/dbs"],
         ]
-        try:
-            for command in commands:
-                process = container.exec(command, combine_stderr=True)
-                process.wait()
-            config_content = str(container.pull("/data/config.yaml", encoding="utf-8").read())
-            config = yaml.safe_load(config_content)
-            config["database"] = self._get_postgresql_credentials()
-            container.push("/data/config.yaml", yaml.safe_dump(config))
-        except (ops.pebble.ExecError, ops.pebble.PathError) as exc:
-            logger.exception("Failed to execute command: %r", exc)
-            raise
+        for command in commands:
+            process = container.exec(command, combine_stderr=True)
+            process.wait()
+        config_content = str(container.pull("/data/config.yaml", encoding="utf-8").read())
+        config = yaml.safe_load(config_content)
+        config["database"] = self._get_postgresql_credentials()
+        container.push("/data/config.yaml", yaml.safe_dump(config))
 
     def _reconcile(self) -> None:
         """Reconcile workload configuration."""
@@ -152,13 +144,20 @@ class MaubotCharm(ops.CharmBase):
             "summary": "maubot layer",
             "description": "pebble config layer for maubot",
             "services": {
+                "nginx": {
+                    "override": "replace",
+                    "summary": "nginx",
+                    "command": "/usr/sbin/nginx",
+                    "startup": "enabled",
+                    "after": [MAUBOT_NAME],
+                },
                 MAUBOT_NAME: {
                     "override": "replace",
                     "summary": "maubot",
                     "command": "python3 -m maubot -c /data/config.yaml",
                     "startup": "enabled",
                     "working-dir": "/data",
-                }
+                },
             },
         }
 

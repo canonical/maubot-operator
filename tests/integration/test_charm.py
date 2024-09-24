@@ -8,6 +8,7 @@
 import logging
 
 import pytest
+import requests
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,8 @@ async def test_build_and_deploy(
     arrange: set up the test Juju model.
     act: build and deploy the Maubot charm, check if is blocked and deploy postgresql.
     assert: the Maubot charm becomes active once is integrated with postgresql.
-        Charm is still active after integrating it with Nginx.
+        Charm is still active after integrating it with Nginx and the request
+        is successful.
     """
     charm = pytestconfig.getoption("--charm-file")
     maubot_image = pytestconfig.getoption("--maubot-image")
@@ -53,3 +55,11 @@ async def test_build_and_deploy(
     await ops_test.model.add_relation(maubot.name, nginx_ingress_integrator.name)
 
     await ops_test.model.wait_for_idle(timeout=600, status="active")
+
+    response = requests.get(
+        "http://127.0.0.1/_matrix/maubot/manifest.json",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+    )
+    assert response.status_code == 200
+    assert "Maubot Manager" in response.text
