@@ -9,7 +9,7 @@
 
 import logging
 import secrets
-import typing
+from typing import Any, Dict
 
 import ops
 import yaml
@@ -38,7 +38,7 @@ class MissingPostgreSQLRelationDataError(Exception):
 class MaubotCharm(ops.CharmBase):
     """Maubot charm."""
 
-    def __init__(self, *args: typing.Any):
+    def __init__(self, *args: Any):
         """Construct.
 
         Args:
@@ -60,7 +60,7 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.ingress.on.ready, self._on_ingress_ready)
         self.framework.observe(self.ingress.on.revoked, self._on_ingress_revoked)
 
-    def _get_configuration(self) -> dict:
+    def _get_configuration(self) -> Dict[str, Any]:
         """Get Maubot configuration content.
 
         Returns:
