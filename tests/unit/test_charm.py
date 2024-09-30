@@ -113,6 +113,7 @@ def test_create_admin_action_success(harness):
     action = harness.run_action("create-admin", {"name": "test"})
 
     assert "password" in action.results
+    assert "error" in action.results and not action.results["error"]
 
 
 def test_create_admin_action_failed(harness):
@@ -128,4 +129,6 @@ def test_create_admin_action_failed(harness):
     try:
         harness.run_action("create-admin", {"name": "root"})
     except ops.testing.ActionFailed as e:
-        assert e.message == "root is reserved, please choose a different name"
+        message = "root is reserved, please choose a different name"
+        assert e.output.results["error"] == message
+        assert e.message == message

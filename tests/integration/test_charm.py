@@ -65,7 +65,7 @@ async def test_build_and_deploy(
     assert "Maubot Manager" in response.text
 
 
-async def test_create_admin_action(ops_test: OpsTest):
+async def test_create_admin_action_success(ops_test: OpsTest):
     """
     arrange: Maubot charm integrated with PostgreSQL.
     act: run the create-admin action.
@@ -88,3 +88,27 @@ async def test_create_admin_action(ops_test: OpsTest):
     )
     assert response.status_code == 200
     assert "token" in response.text
+
+
+@pytest.mark.parametrize(
+    "name,expected_message",
+    [
+        pytest.param("root", "root is reserved, please choose a different name", id="root"),
+        pytest.param("test", "test already exists", id="user_exists"),
+    ],
+)
+async def test_create_admin_action_failed(name: str, expected_message: str, ops_test: OpsTest):
+    """
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the create-admin action.
+    assert: the action results fails.
+    """
+    assert ops_test.model
+    unit = ops_test.model.applications["maubot"].units[0]
+
+    action = await unit.run_action("create-admin", name=name)
+    await action.wait()
+
+    assert "error" in action.results
+    error = action.results["error"]
+    assert error == expected_message

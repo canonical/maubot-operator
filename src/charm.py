@@ -115,6 +115,18 @@ class MaubotCharm(ops.CharmBase):
         self._reconcile()
 
     # Actions events handlers
+    def _fail_event(self, event: ops.ActionEvent, results: Dict[str, str], message: str) -> None:
+        """Handle failure events.
+
+        Args:
+            event: Action event.
+            results: Event results.
+            message: Error message.
+        """
+        results["error"] = message
+        event.set_results(results)
+        event.fail(message)
+
     def _on_create_admin_action(self, event: ops.ActionEvent) -> None:
         """Handle delete-profile action.
 
@@ -122,22 +134,27 @@ class MaubotCharm(ops.CharmBase):
             event: Action event.
         """
         name = event.params["name"]
+        results = {"password": "", "error": ""}
         if name == "root":
-            event.fail("root is reserved, please choose a different name")
+            self._fail_event(event, results, "root is reserved, please choose a different name")
             return
         if (
             not self.container.can_connect()
             or MAUBOT_NAME not in self.container.get_plan().services
             or not self.container.get_service(MAUBOT_NAME).is_running()
         ):
-            event.fail("maubot is not ready")
+            self._fail_event(event, results, "maubot is not ready")
             return
         password = secrets.token_urlsafe(10)
         config = self._get_configuration()
+        if name in config["admins"]:
+            self._fail_event(event, results, f"{name} already exists")
+            return
         config["admins"][name] = password
         self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
         self.container.restart(MAUBOT_NAME)
-        event.set_results({"password": password})
+        results["password"] = password
+        event.set_results(results)
 
     # Integrations events handlers
     def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
