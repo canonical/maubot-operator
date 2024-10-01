@@ -27,6 +27,7 @@ from ops import pebble
 logger = logging.getLogger(__name__)
 
 MAUBOT_NAME = "maubot"
+NGINX_NAME = "nginx"
 
 
 class MissingPostgreSQLRelationDataError(Exception):
@@ -86,7 +87,8 @@ class MaubotCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus("postgresql integration is required")
             return
         container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
-        container.replan()
+        container.restart(MAUBOT_NAME)
+        container.restart(NGINX_NAME)
         self.unit.status = ops.ActiveStatus()
 
     def _on_maubot_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
@@ -132,6 +134,8 @@ class MaubotCharm(ops.CharmBase):
         username = self.postgresql.fetch_relation_field(relation.id, "username")
         password = self.postgresql.fetch_relation_field(relation.id, "password")
 
+        if not endpoints:
+            raise MissingPostgreSQLRelationDataError("Missing mandatory relation data")
         primary_endpoint = endpoints.split(",")[0]
         if not all((primary_endpoint, database, username, password)):
             raise MissingPostgreSQLRelationDataError("Missing mandatory relation data")
@@ -145,7 +149,7 @@ class MaubotCharm(ops.CharmBase):
             "summary": "maubot layer",
             "description": "pebble config layer for maubot",
             "services": {
-                "nginx": {
+                NGINX_NAME: {
                     "override": "replace",
                     "summary": "nginx",
                     "command": "/usr/sbin/nginx",
