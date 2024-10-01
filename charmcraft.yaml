@@ -17,7 +17,7 @@ config:
   options:
     public-url:
       description: >-
-        The public URL where the resources are available. The base path is automatically appended to this.
+        Public base URL where the server is visible.
       type: string
       default: "https://maubot.local"
 
