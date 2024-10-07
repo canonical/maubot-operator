@@ -24,6 +24,13 @@ def harness_fixture():
     )
     root = harness.get_filesystem_root("maubot")
     (root / "data").mkdir()
-    (root / "data" / "config.yaml").write_text("database: sqlite:maubot.db")
+    yaml_content = """\
+database: sqlite:maubot.db
+server:
+    hostname: 0.0.0.0
+    port: 29316
+    public_url: https://example.com
+"""
+    (root / "data" / "config.yaml").write_text(yaml_content)
     yield harness
     harness.cleanup()

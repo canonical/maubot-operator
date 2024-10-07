@@ -13,6 +13,14 @@ links:
   contact:
     - https://launchpad.net/~canonical-is-devops
 
+config:
+  options:
+    public-url:
+      description: >-
+        Public base URL where the server is visible.
+      type: string
+      default: "https://maubot.local"
+
 resources:
   maubot-image:
     type: oci-image
