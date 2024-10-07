@@ -112,3 +112,39 @@ async def test_create_admin_action_failed(name: str, expected_message: str, ops_
     assert "error" in action.results
     error = action.results["error"]
     assert error == expected_message
+
+
+@pytest.mark.abort_on_fail
+async def test_public_url_config(
+    ops_test: OpsTest,
+):
+    """
+    arrange: Maubot is active and paths.json contains default value.
+    act: change public_url with a different path called /internal/.
+    assert: api_path contains the extra subpath /internal/ extracted from the
+        public_url.
+    """
+    response = requests.get(
+        "http://127.0.0.1/_matrix/maubot/paths.json",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "api_path" in data
+    assert data["api_path"] == "/_matrix/maubot/v1"
+
+    assert ops_test.model
+    application = ops_test.model.applications["maubot"]
+    await application.set_config({"public-url": "http://foo.com/internal/"})
+    await ops_test.model.wait_for_idle(timeout=600, status="active")
+
+    response = requests.get(
+        "http://127.0.0.1/_matrix/maubot/paths.json",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "api_path" in data
+    assert data["api_path"] == "/internal/_matrix/maubot/v1"

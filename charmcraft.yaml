@@ -13,11 +13,21 @@ links:
   source: https://github.com/canonical/maubot-operator
   contact:
     - https://launchpad.net/~canonical-is-devops
-# build properties
 assumes:
   - juju >= 3.4
 base: ubuntu@24.04
 build-base: ubuntu@24.04
+config:
+  options:
+    public-url:
+      description: >-
+        Public base URL where the server is visible.
+      type: string
+      default: "https://maubot.local"
+resources:
+  maubot-image:
+    type: oci-image
+    description: OCI image for maubot
 containers:
   maubot:
     resource: maubot-image
@@ -40,10 +50,6 @@ requires:
     limit: 1
   ingress:
     interface: ingress
-resources:
-  maubot-image:
-    type: oci-image
-    description: OCI image for Maubot.
 storage:
   data:
     type: filesystem

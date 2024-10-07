@@ -132,3 +132,19 @@ def test_create_admin_action_failed(harness):
         message = "root is reserved, please choose a different name"
         assert e.output.results["error"] == message
         assert e.message == message
+
+
+def test_public_url_config_changed(harness):
+    """
+    arrange: initialize harness and set postgresql integration.
+    act: change public-url config.
+    assert: charm is active.
+    """
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+
+    harness.update_config({"public-url": "https://example1.com"})
+
+    service = harness.model.unit.get_container("maubot").get_service("maubot")
+    assert service.is_running()
+    assert harness.model.unit.status == ops.ActiveStatus()
