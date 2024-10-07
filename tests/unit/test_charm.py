@@ -80,8 +80,6 @@ def test_maubot_pebble_ready(harness, monkeypatch):
     harness.begin()
     harness.set_can_connect("maubot", True)
     set_postgresql_integration(harness)
-    assert harness.model.unit.status == ops.BlockedStatus("matrix-auth integration is required")
-    set_matrix_auth_integration(harness, monkeypatch)
 
     expected_plan = {
         "services": {

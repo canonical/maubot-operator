@@ -185,7 +185,8 @@ class MaubotCharm(ops.CharmBase):
         """
         relation = self.model.get_relation("matrix-auth")
         if not relation or not relation.app:
-            raise MissingRelationDataError("No matrix relation data", relation_name="matrix-auth")
+            logging.warning("no matrix-auth relation found, getting default matrix credentials")
+            return {"matrix": {"url": "https://matrix-client.matrix.org", "secret": "null"}}
         relation_data = self.matrix_auth.get_remote_relation_data()
         homeserver = relation_data.homeserver
         shared_secret_id = relation_data.shared_secret.get_secret_value()
