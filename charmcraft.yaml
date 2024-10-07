@@ -55,6 +55,9 @@ assumes:
   - juju >= 3.4
 
 requires:
+  matrix-auth:
+    interface: matrix-auth
+    limit: 1
   postgresql:
     interface: postgresql_client
     limit: 1
