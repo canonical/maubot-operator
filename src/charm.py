@@ -106,7 +106,7 @@ class MaubotCharm(ops.CharmBase):
                 container.stop(MAUBOT_NAME)
             except RuntimeError:
                 logging.info("maubot is not running, no action taken")
-            except ops.pebble.ChangeError as pe:
+            except (ops.pebble.ChangeError, ops.pebble.APIError) as pe:
                 logging.exception("failed to stop maubot", exc_info=pe)
             return
         container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)

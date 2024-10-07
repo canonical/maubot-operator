@@ -69,7 +69,7 @@ def test_maubot_pebble_ready_postgresql_required(harness):
     assert harness.model.unit.status == ops.BlockedStatus("postgresql integration is required")
 
 
-def test_maubot_pebble_ready(harness, monkeypatch):
+def test_maubot_pebble_ready(harness):
     """
     arrange: initialize the testing harness with handle_exec and
         config.yaml file.
