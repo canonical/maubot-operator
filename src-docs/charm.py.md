@@ -14,10 +14,19 @@ Maubot charm service.
 
 ---
 
+## <kbd>class</kbd> `EventFailError`
+Exception raised when an event fails. 
+
+
+
+
+
+---
+
 ## <kbd>class</kbd> `MaubotCharm`
 Maubot charm. 
 
-<a href="../src/charm.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

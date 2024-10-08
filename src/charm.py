@@ -36,6 +36,10 @@ class MissingPostgreSQLRelationDataError(Exception):
     """Custom exception to be raised in case of malformed/missing Postgresql relation data."""
 
 
+class EventFailError(Exception):
+    """Exception raised when an event fails."""
+
+
 class MaubotCharm(ops.CharmBase):
     """Maubot charm."""
 
@@ -119,46 +123,39 @@ class MaubotCharm(ops.CharmBase):
         self._reconcile()
 
     # Actions events handlers
-    def _fail_event(self, event: ops.ActionEvent, results: Dict[str, str], message: str) -> None:
-        """Handle failure events.
-
-        Args:
-            event: Action event.
-            results: Event results.
-            message: Error message.
-        """
-        results["error"] = message
-        event.set_results(results)
-        event.fail(message)
-
     def _on_create_admin_action(self, event: ops.ActionEvent) -> None:
         """Handle delete-profile action.
 
         Args:
             event: Action event.
+
+        Raises:
+            EventFailError: in case the event fails.
         """
-        name = event.params["name"]
-        results = {"password": "", "error": ""}
-        if name == "root":
-            self._fail_event(event, results, "root is reserved, please choose a different name")
-            return
-        if (
-            not self.container.can_connect()
-            or MAUBOT_NAME not in self.container.get_plan().services
-            or not self.container.get_service(MAUBOT_NAME).is_running()
-        ):
-            self._fail_event(event, results, "maubot is not ready")
-            return
-        password = secrets.token_urlsafe(10)
-        config = self._get_configuration()
-        if name in config["admins"]:
-            self._fail_event(event, results, f"{name} already exists")
-            return
-        config["admins"][name] = password
-        self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
-        self.container.restart(MAUBOT_NAME)
-        results["password"] = password
-        event.set_results(results)
+        try:
+            name = event.params["name"]
+            results = {"password": "", "error": ""}
+            if name == "root":
+                raise EventFailError("root is reserved, please choose a different name")
+            if (
+                not self.container.can_connect()
+                or MAUBOT_NAME not in self.container.get_plan().services
+                or not self.container.get_service(MAUBOT_NAME).is_running()
+            ):
+                raise EventFailError("maubot is not ready")
+            password = secrets.token_urlsafe(10)
+            config = self._get_configuration()
+            if name in config["admins"]:
+                raise EventFailError(f"{name} already exists")
+            config["admins"][name] = password
+            self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
+            self.container.restart(MAUBOT_NAME)
+            results["password"] = password
+            event.set_results(results)
+        except EventFailError as e:
+            results["error"] = str(e)
+            event.set_results(results)
+            event.fail(str(e))
 
     # Integrations events handlers
     def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
