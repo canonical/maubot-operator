@@ -104,8 +104,6 @@ class MaubotCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus(f"{e.relation_name} integration is required")
             try:
                 container.stop(MAUBOT_NAME)
-            except RuntimeError:
-                logging.info("maubot is not running, no action taken")
             except (ops.pebble.ChangeError, ops.pebble.APIError) as pe:
                 logging.exception("failed to stop maubot", exc_info=pe)
             return
