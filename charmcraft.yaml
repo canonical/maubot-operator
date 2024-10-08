@@ -60,3 +60,25 @@ requires:
     limit: 1
   ingress:
     interface: ingress
+
+actions:
+  register-client-account:
+    description: Register Matrix client account for a bot. The result is user ID,
+      password, access token and device ID that should be used for registering a
+      client.
+
+      See Maubot documentation for more details.
+      https://docs.mau.fi/maubot/usage/basic.html#creating-clients
+    params:
+      admin-name:
+        type: string
+        description: The name of the administrator user that will be used for
+          creating the account.
+      admin-password:
+        type: string
+        description: The password of the administrator user that will be used
+          for creating the account.
+      account-name:
+        type: string
+        description: The account name.
+
