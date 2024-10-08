@@ -7,7 +7,10 @@
 
 import ops
 import ops.testing
+import pytest
 from charms.synapse.v0.matrix_auth import MatrixAuthProviderData
+
+from charm import MissingRelationDataError
 
 
 def set_postgresql_integration(harness) -> None:
@@ -94,6 +97,8 @@ def test_database_created(harness):
     assert: postgresql credentials are set as expected.
     """
     harness.begin_with_initial_hooks()
+    with pytest.raises(MissingRelationDataError):
+        harness.charm._get_postgresql_credentials()
 
     set_postgresql_integration(harness)
 
@@ -122,11 +127,14 @@ def test_public_url_config_changed(harness, monkeypatch):
 
 def test_matrix_credentials_registered(harness, monkeypatch):
     """
-    arrange: initialize harness and verify that there is no credentials.
+    arrange: initialize harness and verify that the credentials are set with default values.
     act: set matrix-auth integration.
     assert: matrix credentials are set as expected.
     """
     harness.begin_with_initial_hooks()
+    assert harness.charm._get_matrix_credentials() == {
+        "matrix": {"secret": "null", "url": "https://matrix-client.matrix.org"}
+    }
 
     set_matrix_auth_integration(harness, monkeypatch)
 
