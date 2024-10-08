@@ -33,26 +33,6 @@ def set_postgresql_integration(harness) -> None:
     )
 
 
-def set_matrix_auth_integration(harness, monkeypatch) -> None:
-    """Set matrix-auth integration.
-
-    Args:
-        harness: harness instance.
-        monkeypatch: monkeypatch instance.
-    """
-    monkeypatch.setattr(
-        MatrixAuthProviderData, "get_shared_secret", lambda *args: "test-shared-secret"
-    )
-    relation_data = {"homeserver": "https://example.com", "shared_secret_id": "test-secret-id"}
-    matrix_relation_id = harness.add_relation("matrix-auth", "synapse", app_data=relation_data)
-    harness.add_relation_unit(matrix_relation_id, "synapse/0")
-    harness.update_relation_data(
-        matrix_relation_id,
-        "synapse",
-        relation_data,
-    )
-
-
 def test_maubot_pebble_ready_postgresql_required(harness):
     """
     arrange: initialize the testing harness with handle_exec and
@@ -153,3 +133,23 @@ def test_matrix_credentials_registered(harness, monkeypatch):
     assert harness.charm._get_matrix_credentials() == {
         "synapse": {"secret": "test-shared-secret", "url": "https://example.com"}
     }
+
+
+def set_matrix_auth_integration(harness, monkeypatch) -> None:
+    """Set matrix-auth integration.
+
+    Args:
+        harness: harness instance.
+        monkeypatch: monkeypatch instance.
+    """
+    monkeypatch.setattr(
+        MatrixAuthProviderData, "get_shared_secret", lambda *args: "test-shared-secret"
+    )
+    relation_data = {"homeserver": "https://example.com", "shared_secret_id": "test-secret-id"}
+    matrix_relation_id = harness.add_relation("matrix-auth", "synapse", app_data=relation_data)
+    harness.add_relation_unit(matrix_relation_id, "synapse/0")
+    harness.update_relation_data(
+        matrix_relation_id,
+        "synapse",
+        relation_data,
+    )
