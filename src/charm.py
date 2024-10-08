@@ -112,7 +112,7 @@ class MaubotCharm(ops.CharmBase):
                     # See https://github.com/canonical/operator/issues/1310
                     pass
                 else:
-                    raise e from re
+                    raise re
             except (ops.pebble.ChangeError, ops.pebble.APIError) as pe:
                 logging.exception("failed to stop maubot", exc_info=pe)
             return
