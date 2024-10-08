@@ -44,9 +44,7 @@ def set_matrix_auth_integration(harness, monkeypatch) -> None:
         MatrixAuthProviderData, "get_shared_secret", lambda *args: "test-shared-secret"
     )
     relation_data = {"homeserver": "https://example.com", "shared_secret_id": "test-secret-id"}
-    matrix_relation_id = harness.add_relation(  # pylint: disable=attribute-defined-outside-init
-        "matrix-auth", "synapse", app_data=relation_data
-    )
+    matrix_relation_id = harness.add_relation("matrix-auth", "synapse", app_data=relation_data)
     harness.add_relation_unit(matrix_relation_id, "synapse/0")
     harness.update_relation_data(
         matrix_relation_id,
