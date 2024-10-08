@@ -5,55 +5,12 @@
 
 """Unit tests."""
 
-from functools import wraps
-from typing import Any, Callable
-
 import ops
 import ops.testing
 import pytest
 from charms.synapse.v0.matrix_auth import MatrixAuthProviderData
 
 from charm import MissingRelationDataError
-
-
-def handle_runtime_exception(f: Callable[..., Any | None]) -> Callable[..., Any | None]:
-    """Handle RunTimeError raised by Harness when a service is not found.
-
-    This behavior is not expected in real environment.
-    For more details, see this issue:
-    https://github.com/canonical/operator/issues/1310
-
-    Args:
-        f (Callable[..., Any  |  None]): the unit test.
-
-    Returns:
-        Executed test.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kw) -> Any | None:
-        """Wrap the test function.
-
-        Args:
-            args: test arguments.
-            kw: keyword arguments to pass to the decorated function.
-
-        Raises:
-            e: Exception raised by the test.
-
-        Returns:
-            Executed test.
-        """
-        try:
-            return f(*args, **kw)
-        except RuntimeError as e:
-            if str(e) == '400 Bad Request: service "maubot" does not exist':
-                pass
-            else:
-                raise e
-        return None
-
-    return wrapper
 
 
 def set_postgresql_integration(harness) -> None:
@@ -79,7 +36,6 @@ def set_postgresql_integration(harness) -> None:
     )
 
 
-@handle_runtime_exception
 def test_maubot_pebble_ready_postgresql_required(harness):
     """
     arrange: initialize the testing harness with handle_exec and
@@ -134,7 +90,6 @@ def test_maubot_pebble_ready(harness):
     assert harness.model.unit.status == ops.ActiveStatus()
 
 
-@handle_runtime_exception
 def test_database_created(harness):
     """
     arrange: initialize harness and verify that there is no credentials.
@@ -153,7 +108,6 @@ def test_database_created(harness):
     )
 
 
-@handle_runtime_exception
 def test_public_url_config_changed(harness, monkeypatch):
     """
     arrange: initialize harness and set postgresql integration.
@@ -171,7 +125,6 @@ def test_public_url_config_changed(harness, monkeypatch):
     assert harness.model.unit.status == ops.ActiveStatus()
 
 
-@handle_runtime_exception
 def test_matrix_credentials_registered(harness, monkeypatch):
     """
     arrange: initialize harness and verify that the credentials are set with default values.

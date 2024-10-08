@@ -93,7 +93,9 @@ class MaubotCharm(ops.CharmBase):
         container.push("/data/config.yaml", yaml.safe_dump(config))
 
     def _reconcile(self) -> None:
-        """Reconcile workload configuration."""
+        # Ignoring DC050 for now since RuntimeError is handled/re-raised only
+        # because a Harness issue.
+        """Reconcile workload configuration."""  # noqa: DCO050
         self.unit.status = ops.MaintenanceStatus()
         container = self.unit.get_container(MAUBOT_NAME)
         if not container.can_connect():
@@ -104,6 +106,13 @@ class MaubotCharm(ops.CharmBase):
             self.unit.status = ops.BlockedStatus(f"{e.relation_name} integration is required")
             try:
                 container.stop(MAUBOT_NAME)
+            except RuntimeError as re:
+                if str(re) == '400 Bad Request: service "maubot" does not exist':
+                    # Remove this once Harness is fixed
+                    # See https://github.com/canonical/operator/issues/1310
+                    pass
+                else:
+                    raise e from re
             except (ops.pebble.ChangeError, ops.pebble.APIError) as pe:
                 logging.exception("failed to stop maubot", exc_info=pe)
             return
