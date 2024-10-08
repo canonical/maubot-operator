@@ -12,6 +12,15 @@
       "# renovate: base:\\s+(?<depName>[^:]*):(?<currentValue>[^\\s@]*)(@(?<currentDigest>sha256:[0-9a-f]*))?"],
       "datasourceTemplate": "docker",
       "versioningTemplate": "ubuntu"
+    },
+    {
+      "fileMatch": ["(^|/)rockcraft.yaml$"],
+      "description": "Update Maubot workload",
+      "matchStringsStrategy": "any",
+      "matchStrings": ["maubot==(?<currentValue>.+)", "version: (?<currentValue>.+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "maubot/maubot",
+      "versioningTemplate": "semver-coerced"
     }
   ],
   "packageRules": [
@@ -21,11 +30,6 @@
         "docker"
       ],
       "pinDigests": true
-    },
-    {
-      "matchFiles": ["rockcraft.yaml"],
-      "matchUpdateTypes": ["major", "minor", "patch"],
-      "enabled": false
     }
   ]
 }
