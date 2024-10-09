@@ -42,7 +42,7 @@ admins:
     harness.cleanup()
 
 
-@pytest_asyncio.fixture(scope="module", name="get_unit_ips")
+@pytest_asyncio.fixture(scope="function", name="get_unit_ips")
 async def fixture_get_unit_ips(ops_test: OpsTest):
     """Return an async function to retrieve unit ip addresses of a certain application."""
 
