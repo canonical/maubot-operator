@@ -30,6 +30,8 @@ server:
     hostname: 0.0.0.0
     port: 29316
     public_url: https://example.com
+admins:
+    root:
 """
     (root / "data" / "config.yaml").write_text(yaml_content)
     yield harness
