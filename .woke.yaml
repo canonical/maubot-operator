@@ -1,0 +1,3 @@
+ignore:
+  terms:
+    - "blackbox" # Ignoring the term 'blackbox' in all files, blackbox is a prometheus exporter
