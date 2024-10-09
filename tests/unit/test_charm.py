@@ -13,29 +13,6 @@ from charms.synapse.v0.matrix_auth import MatrixAuthProviderData
 from charm import MissingRelationDataError
 
 
-def set_postgresql_integration(harness) -> None:
-    """Set postgresql integration.
-
-    Args:
-        harness: harness instance.
-    """
-    relation_data = {
-        "database": "maubot",
-        "endpoints": "dbhost:5432",
-        "password": "somepasswd",  # nosec
-        "username": "someuser",
-    }
-    db_relation_id = harness.add_relation(  # pylint: disable=attribute-defined-outside-init
-        "postgresql", "postgresql"
-    )
-    harness.add_relation_unit(db_relation_id, "postgresql/0")
-    harness.update_relation_data(
-        db_relation_id,
-        "postgresql",
-        relation_data,
-    )
-
-
 def test_maubot_pebble_ready_postgresql_required(harness):
     """
     arrange: initialize the testing harness with handle_exec and
@@ -108,6 +85,40 @@ def test_database_created(harness):
     )
 
 
+def test_create_admin_action_success(harness):
+    """
+    arrange: initialize the testing harness and set up all required integration.
+    act: run create-admin charm action.
+    assert: ensure password is in the results.
+    """
+    harness.set_leader()
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+
+    action = harness.run_action("create-admin", {"name": "test"})
+
+    assert "password" in action.results
+    assert "error" in action.results and not action.results["error"]
+
+
+def test_create_admin_action_failed(harness):
+    """
+    arrange: initialize the testing harness and set up all required integration.
+    act: run create-admin charm action with reserved name root.
+    assert: ensure action fails.
+    """
+    harness.set_leader()
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+
+    try:
+        harness.run_action("create-admin", {"name": "root"})
+    except ops.testing.ActionFailed as e:
+        message = "root is reserved, please choose a different name"
+        assert e.output.results["error"] == message
+        assert e.message == message
+
+
 def test_public_url_config_changed(harness, monkeypatch):
     """
     arrange: initialize harness and set postgresql integration.
@@ -159,5 +170,28 @@ def set_matrix_auth_integration(harness, monkeypatch) -> None:
     harness.update_relation_data(
         matrix_relation_id,
         "synapse",
+        relation_data,
+    )
+
+
+def set_postgresql_integration(harness) -> None:
+    """Set postgresql integration.
+
+    Args:
+        harness: harness instance.
+    """
+    relation_data = {
+        "database": "maubot",
+        "endpoints": "dbhost:5432",
+        "password": "somepasswd",  # nosec
+        "username": "someuser",
+    }
+    db_relation_id = harness.add_relation(  # pylint: disable=attribute-defined-outside-init
+        "postgresql", "postgresql"
+    )
+    harness.add_relation_unit(db_relation_id, "postgresql/0")
+    harness.update_relation_data(
+        db_relation_id,
+        "postgresql",
         relation_data,
     )
