@@ -6,6 +6,7 @@
 """Integration tests."""
 
 import logging
+import typing
 
 import pytest
 import requests
@@ -63,6 +64,64 @@ async def test_build_and_deploy(
     )
     assert response.status_code == 200
     assert "Maubot Manager" in response.text
+
+
+@pytest.mark.abort_on_fail
+async def test_cos_integration(
+    ops_test: OpsTest, get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]]
+):
+    """
+    arrange: deploy Prometheus, Grafana and integrate them.
+    act: integrate Maubot with Prometheus and Grafana.
+    assert: Maubot is a Prometheus target and the dashboard is available.
+    """
+    assert ops_test.model
+    prometheus_k8s = await ops_test.model.deploy(
+        "prometheus-k8s",
+        channel="latest/edge",
+        trust=True,
+    )
+    await ops_test.model.add_relation("maubot", prometheus_k8s.name)
+    await ops_test.model.wait_for_idle(timeout=600, status="active")
+
+    for unit_ip in await get_unit_ips(prometheus_k8s.name):
+        query_targets = requests.get(f"http://{unit_ip}:9090/api/v1/targets", timeout=10).json()
+        assert len(query_targets["data"]["activeTargets"])
+
+    grafana_k8s = await ops_test.model.deploy(
+        "grafana-k8s",
+        channel="latest/edge",
+        trust=True,
+    )
+    await ops_test.model.add_relation(
+        f"{grafana_k8s.name}:grafana-source", f"{prometheus_k8s.name}:grafana-source"
+    )
+    await ops_test.model.add_relation("maubot", grafana_k8s.name)
+    action = (
+        await ops_test.model.applications[grafana_k8s.name]
+        .units[0]
+        .run_action("get-admin-password")
+    )
+    await action.wait()
+    password = action.results["admin-password"]
+    grafana_ip = (await get_unit_ips(grafana_k8s.name))[0]
+    sess = requests.session()
+    sess.post(
+        f"http://{grafana_ip}:3000/login",
+        json={
+            "user": "admin",
+            "password": password,
+        },
+    ).raise_for_status()
+    datasources = sess.get(f"http://{grafana_ip}:3000/api/datasources", timeout=10).json()
+    datasource_types = set(datasource["type"] for datasource in datasources)
+    assert "prometheus" in datasource_types
+    dashboards = sess.get(
+        f"http://{grafana_ip}:3000/api/search",
+        timeout=10,
+        params={"query": "Prometheus Maubot Blackbox Exporter"},
+    ).json()
+    assert len(dashboards)
 
 
 async def test_create_admin_action_success(ops_test: OpsTest):
