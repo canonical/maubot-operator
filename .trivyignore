@@ -2,3 +2,6 @@
 # Calling Decoder.Decode on a message which contains deeply nested 
 # structures can cause a panic due to stack exhaustion.
 CVE-2024-34156
+# Blackbox Exporter CVEs - Go project issues
+CVE-2024-24790
+CVE-2024-24788

@@ -1,0 +1,3 @@
+rules:
+  # Ignore "blackbox" - prometheus exporter name
+  - name: blackbox

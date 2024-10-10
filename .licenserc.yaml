@@ -10,6 +10,8 @@ header:
   paths-ignore:
     - '.github/**'
     - '.trivyignore'
+    - '.woke.yaml'
+    - '.woke.yml'
     - '**/*.conf'
     - '**/*.json'
     - '**/*.md'
@@ -20,6 +22,7 @@ header:
     - 'CODEOWNERS'
     - 'LICENSE'
     - 'lib/**'
+    - 'maubot_rock/blackbox.yaml'
     - 'trivy.yaml'
     - 'pyproject.toml'
     - 'zap_rules.tsv'
