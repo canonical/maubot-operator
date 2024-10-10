@@ -97,6 +97,7 @@ async def test_cos_integration(
         f"{grafana_k8s.name}:grafana-source", f"{prometheus_k8s.name}:grafana-source"
     )
     await ops_test.model.add_relation("maubot", grafana_k8s.name)
+    await ops_test.model.wait_for_idle(timeout=600, status="active")
     action = (
         await ops_test.model.applications[grafana_k8s.name]
         .units[0]
