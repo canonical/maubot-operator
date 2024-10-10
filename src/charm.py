@@ -36,7 +36,7 @@ NGINX_NAME = "nginx"
 class MissingRelationDataError(Exception):
     """Custom exception to be raised in case of malformed/missing relation data."""
 
-    def __init__(self, message: str, relation_name: str = "") -> None:
+    def __init__(self, message: str, relation_name: str) -> None:
         """Init custom exception.
 
         Args:

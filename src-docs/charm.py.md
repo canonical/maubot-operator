@@ -92,7 +92,7 @@ Custom exception to be raised in case of malformed/missing relation data.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(message: str, relation_name: str = '') → None
+__init__(message: str, relation_name: str) → None
 ```
 
 Init custom exception. 
