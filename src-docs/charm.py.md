@@ -26,7 +26,7 @@ Exception raised when an event fails.
 ## <kbd>class</kbd> `MaubotCharm`
 Maubot charm. 
 
-<a href="../src/charm.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 

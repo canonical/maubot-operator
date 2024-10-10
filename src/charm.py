@@ -9,7 +9,6 @@
 
 import logging
 import secrets
-import typing
 from typing import Any, Dict
 
 import ops
@@ -45,7 +44,7 @@ class EventFailError(Exception):
 class MaubotCharm(ops.CharmBase):
     """Maubot charm."""
 
-    def __init__(self, *args: typing.Any):
+    def __init__(self, *args: Any):
         """Construct.
 
         Args:
@@ -60,6 +59,7 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.on.maubot_pebble_ready, self._on_maubot_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         # Actions events handlers
+        self.framework.observe(self.on.create_admin_action, self._on_create_admin_action)
         self.framework.observe(
             self.on.register_client_account_action, self._on_register_client_account_action
         )
@@ -91,6 +91,7 @@ class MaubotCharm(ops.CharmBase):
             process.wait()
         config = self._get_configuration()
         config["database"] = self._get_postgresql_credentials()
+        self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
         config["server"]["public_url"] = self.config.get("public-url")
         self.container.push("/data/config.yaml", yaml.safe_dump(config))
 
@@ -117,7 +118,58 @@ class MaubotCharm(ops.CharmBase):
         """Handle changed configuration."""
         self._reconcile()
 
+    # Integrations events handlers
+    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
+        """Handle database created event."""
+        self._reconcile()
+
+    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
+        """Handle endpoints changed event."""
+        self._reconcile()
+
+    def _on_ingress_ready(self, _: IngressPerAppReadyEvent) -> None:
+        """Handle ingress ready event."""
+        self._reconcile()
+
+    def _on_ingress_revoked(self, _: IngressPerAppRevokedEvent) -> None:
+        """Handle ingress revoked event."""
+        self._reconcile()
+
     # Actions events handlers
+    def _on_create_admin_action(self, event: ops.ActionEvent) -> None:
+        """Handle delete-profile action.
+
+        Args:
+            event: Action event.
+
+        Raises:
+            EventFailError: in case the event fails.
+        """
+        try:
+            name = event.params["name"]
+            results = {"password": "", "error": ""}
+            if name == "root":
+                raise EventFailError("root is reserved, please choose a different name")
+            if (
+                not self.container.can_connect()
+                or MAUBOT_NAME not in self.container.get_plan().services
+                or not self.container.get_service(MAUBOT_NAME).is_running()
+            ):
+                raise EventFailError("maubot is not ready")
+            password = secrets.token_urlsafe(10)
+            config = self._get_configuration()
+            if name in config["admins"]:
+                raise EventFailError(f"{name} already exists")
+            config["admins"][name] = password
+            self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
+            self.container.restart(MAUBOT_NAME)
+            results["password"] = password
+            event.set_results(results)
+        except EventFailError as e:
+            results["error"] = str(e)
+            event.set_results(results)
+            event.fail(str(e))
+
     def _on_register_client_account_action(self, event: ops.ActionEvent) -> None:
         """Handle register-client-account action.
 
@@ -174,23 +226,6 @@ class MaubotCharm(ops.CharmBase):
             results["error"] = f"error while interacting with Maubot: {str(e)}"
             event.set_results(results)
             event.fail(f"error while interacting with Maubot: {str(e)}")
-
-    # Integrations events handlers
-    def _on_ingress_ready(self, _: IngressPerAppReadyEvent) -> None:
-        """Handle ingress ready event."""
-        self._reconcile()
-
-    def _on_ingress_revoked(self, _: IngressPerAppRevokedEvent) -> None:
-        """Handle ingress revoked event."""
-        self._reconcile()
-
-    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
-        """Handle database created event."""
-        self._reconcile()
-
-    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
-        """Handle endpoints changed event."""
-        self._reconcile()
 
     # Relation data handlers
     def _get_postgresql_credentials(self) -> str:

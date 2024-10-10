@@ -1,6 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+type: charm
 name: maubot
 title: maubot
 description: |
@@ -12,7 +13,10 @@ links:
   source: https://github.com/canonical/maubot-operator
   contact:
     - https://launchpad.net/~canonical-is-devops
-
+assumes:
+  - juju >= 3.4
+base: ubuntu@24.04
+build-base: ubuntu@24.04
 config:
   options:
     public-url:
@@ -20,28 +24,16 @@ config:
         Public base URL where the server is visible.
       type: string
       default: "https://maubot.local"
-
 resources:
   maubot-image:
     type: oci-image
     description: OCI image for maubot
-
 containers:
   maubot:
     resource: maubot-image
     mounts:
     - storage: data
       location: /data
-storage:
-  data:
-    type: filesystem
-
-type: charm
-base: ubuntu@24.04
-build-base: ubuntu@24.04
-platforms:
-  amd64:
-
 parts:
   charm:
     build-packages:
@@ -50,18 +42,24 @@ parts:
       - libssl-dev
       - pkg-config
       - rustc
-
-assumes:
-  - juju >= 3.4
-
+platforms:
+  amd64:
 requires:
   postgresql:
     interface: postgresql_client
     limit: 1
   ingress:
     interface: ingress
-
+storage:
+  data:
+    type: filesystem
 actions:
+  create-admin:
+    description: Create administrator user to Maubot.
+    params:
+      name:
+        type: string
+        description: The name of the administrator user.
   register-client-account:
     description: Register Matrix client account for a bot. The result is user ID,
       password, access token and device ID that should be used for registering a
@@ -81,4 +79,3 @@ actions:
       account-name:
         type: string
         description: The account name.
-
