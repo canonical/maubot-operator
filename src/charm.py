@@ -9,7 +9,6 @@
 
 import logging
 import secrets
-import socket
 from typing import Any, Dict
 
 import ops
@@ -235,13 +234,15 @@ class MaubotCharm(ops.CharmBase):
     @property
     def _probes_scraping_job(self) -> list:
         """The scraping job to execute probes from Prometheus."""
-        jobs = []
         probe = {
             "job_name": "blackbox_maubot",
             "metrics_path": "/probe",
             "params": {"module": ["http_2xx"]},
             "static_configs": [{"targets": ["http://127.0.0.1:29316/_matrix/maubot/"]}],
         }
+        unit_name = self.unit.name.replace("/", "-")
+        app_name = self.app.name
+        endpoint_address = f"{unit_name}.{app_name}-endpoints.{self.model.name}.svc.cluster.local"
         # The relabel configs come from the official Blackbox Exporter docs; please refer
         # to that for further information on what they do
         probe["relabel_configs"] = [
@@ -250,11 +251,10 @@ class MaubotCharm(ops.CharmBase):
             # Copy the scrape job target to an extra label for dashboard usage
             {"source_labels": ["__param_target"], "target_label": "probe_target"},
             # Set the address to scrape to the blackbox exporter url
-            {"target_label": "__address__", "replacement": f"{socket.getfqdn()}:9115"},
+            {"target_label": "__address__", "replacement": f"{endpoint_address}:9115"},
         ]
-        jobs.append(probe)
 
-        return jobs
+        return [probe]
 
 
 if __name__ == "__main__":  # pragma: nocover
