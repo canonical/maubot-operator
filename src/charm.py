@@ -12,6 +12,7 @@ import secrets
 from typing import Any, Dict
 
 import ops
+import requests
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
@@ -59,6 +60,9 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         # Actions events handlers
         self.framework.observe(self.on.create_admin_action, self._on_create_admin_action)
+        self.framework.observe(
+            self.on.register_client_account_action, self._on_register_client_account_action
+        )
         # Integrations events handlers
         self.framework.observe(self.postgresql.on.database_created, self._on_database_created)
         self.framework.observe(self.postgresql.on.endpoints_changed, self._on_endpoints_changed)
@@ -114,6 +118,15 @@ class MaubotCharm(ops.CharmBase):
         """Handle changed configuration."""
         self._reconcile()
 
+    # Integrations events handlers
+    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
+        """Handle database created event."""
+        self._reconcile()
+
+    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
+        """Handle endpoints changed event."""
+        self._reconcile()
+
     def _on_ingress_ready(self, _: IngressPerAppReadyEvent) -> None:
         """Handle ingress ready event."""
         self._reconcile()
@@ -157,14 +170,62 @@ class MaubotCharm(ops.CharmBase):
             event.set_results(results)
             event.fail(str(e))
 
-    # Integrations events handlers
-    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
-        """Handle database created event."""
-        self._reconcile()
+    def _on_register_client_account_action(self, event: ops.ActionEvent) -> None:
+        """Handle register-client-account action.
 
-    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
-        """Handle endpoints changed event."""
-        self._reconcile()
+        Matrix-auth integration required.
+
+        Args:
+            event: Action event.
+
+        Raises:
+            EventFailError: in case the event fails.
+        """
+        try:
+            results: dict[str, str] = {
+                "user-id": "",
+                "password": "",
+                "access-token": "",
+                "device-id": "",
+                "error": "",
+            }
+            if (
+                not self.container.can_connect()
+                or MAUBOT_NAME not in self.container.get_plan().services
+                or not self.container.get_service(MAUBOT_NAME).is_running()
+            ):
+                raise EventFailError("maubot is not ready")
+            # draft if no matrix-auth integration, fail
+            admin_name = event.params["admin-name"]
+            admin_password = event.params["admin-password"]
+            config = self._get_configuration()
+            if admin_name not in config["admins"]:
+                raise EventFailError(f"{admin_name} not found in admin users")
+            # Login in Maubot
+            url = "http://localhost:29316/_matrix/maubot/v1/auth/login"
+            payload = {"username": admin_name, "password": admin_password}
+            response = requests.post(url, json=payload, timeout=5)
+            response.raise_for_status()
+            token = response.json().get("token")
+            # Register Matrix Account
+            account_name = event.params["account-name"]
+            url = "http://localhost:29316/_matrix/maubot/v1/client/auth/synapse/register"
+            password = secrets.token_urlsafe(10)
+            payload = {"username": account_name, "password": password}
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.post(url, json=payload, headers=headers, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            # Set results
+            results["user-id"] = data.get("user_id")
+            results["password"] = password
+            results["access-token"] = data.get("access_token")
+            results["device-id"] = data.get("device_id")
+            event.set_results(results)
+        except (EventFailError, requests.exceptions.RequestException, TimeoutError) as e:
+            results["error"] = f"error while interacting with Maubot: {str(e)}"
+            event.set_results(results)
+            event.fail(f"error while interacting with Maubot: {str(e)}")
 
     # Relation data handlers
     def _get_postgresql_credentials(self) -> str:
