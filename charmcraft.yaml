@@ -46,7 +46,7 @@ platforms:
   amd64:
 requires:
   matrix-auth:
-    interface: matrix-auth
+    interface: matrix_auth
     limit: 1
   postgresql:
     interface: postgresql_client
