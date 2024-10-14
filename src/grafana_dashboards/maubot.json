@@ -127,7 +127,7 @@
             "format": "time_series",
             "interval": "$interval",
             "intervalFactor": 1,
-            "legendFormat": "{{target}}",
+            "legendFormat": "{{instance}}",
             "refId": "B"
           }
         ],
@@ -507,7 +507,7 @@
             "format": "time_series",
             "interval": "$interval",
             "intervalFactor": 1,
-            "legendFormat": "{{target}}",
+            "legendFormat": "{{instance}}",
             "refId": "A"
           }
         ],
