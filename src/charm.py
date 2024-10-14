@@ -19,6 +19,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseEndpointsChangedEvent,
     DatabaseRequires,
 )
+from charms.synapse.v0.matrix_auth import MatrixAuthRequestProcessed, MatrixAuthRequires
 from charms.traefik_k8s.v2.ingress import (
     IngressPerAppReadyEvent,
     IngressPerAppRequirer,
@@ -33,8 +34,18 @@ MAUBOT_NAME = "maubot"
 NGINX_NAME = "nginx"
 
 
-class MissingPostgreSQLRelationDataError(Exception):
-    """Custom exception to be raised in case of malformed/missing Postgresql relation data."""
+class MissingRelationDataError(Exception):
+    """Custom exception to be raised in case of malformed/missing relation data."""
+
+    def __init__(self, message: str, relation_name: str) -> None:
+        """Init custom exception.
+
+        Args:
+            message: Exception message.
+            relation_name: Relation name that raised the exception.
+        """
+        super().__init__(message)
+        self.relation_name = relation_name
 
 
 class EventFailError(Exception):
@@ -56,6 +67,7 @@ class MaubotCharm(ops.CharmBase):
         self.postgresql = DatabaseRequires(
             self, relation_name="postgresql", database_name=self.app.name
         )
+        self.matrix_auth = MatrixAuthRequires(self)
         self.framework.observe(self.on.maubot_pebble_ready, self._on_maubot_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         # Actions events handlers
@@ -68,6 +80,10 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.postgresql.on.endpoints_changed, self._on_endpoints_changed)
         self.framework.observe(self.ingress.on.ready, self._on_ingress_ready)
         self.framework.observe(self.ingress.on.revoked, self._on_ingress_revoked)
+        self.framework.observe(
+            self.matrix_auth.on.matrix_auth_request_processed,
+            self._on_matrix_auth_request_processed,
+        )
 
     def _get_configuration(self) -> Dict[str, Any]:
         """Get Maubot configuration content.
@@ -91,19 +107,32 @@ class MaubotCharm(ops.CharmBase):
             process.wait()
         config = self._get_configuration()
         config["database"] = self._get_postgresql_credentials()
-        self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
+        config["homeservers"] = self._get_matrix_credentials()
         config["server"]["public_url"] = self.config.get("public-url")
-        self.container.push("/data/config.yaml", yaml.safe_dump(config))
+        self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
 
     def _reconcile(self) -> None:
-        """Reconcile workload configuration."""
+        # Ignoring DC050 for now since RuntimeError is handled/re-raised only
+        # because a Harness issue.
+        """Reconcile workload configuration."""  # noqa: DCO050
         self.unit.status = ops.MaintenanceStatus()
         if not self.container.can_connect():
             return
         try:
             self._configure_maubot()
-        except MissingPostgreSQLRelationDataError:
-            self.unit.status = ops.BlockedStatus("postgresql integration is required")
+        except MissingRelationDataError as e:
+            self.unit.status = ops.BlockedStatus(f"{e.relation_name} integration is required")
+            try:
+                self.container.stop(MAUBOT_NAME)
+            except RuntimeError as re:
+                if str(re) == '400 Bad Request: service "maubot" does not exist':
+                    # Remove this once Harness is fixed
+                    # See https://github.com/canonical/operator/issues/1310
+                    pass
+                else:
+                    raise re
+            except (ops.pebble.ChangeError, ops.pebble.APIError) as pe:
+                logging.exception("failed to stop maubot", exc_info=pe)
             return
         self.container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
         self.container.restart(MAUBOT_NAME)
@@ -227,6 +256,10 @@ class MaubotCharm(ops.CharmBase):
             event.set_results(results)
             event.fail(f"error while interacting with Maubot: {str(e)}")
 
+    def _on_matrix_auth_request_processed(self, _: MatrixAuthRequestProcessed) -> None:
+        """Handle matrix auth request processed event."""
+        self._reconcile()
+
     # Relation data handlers
     def _get_postgresql_credentials(self) -> str:
         """Get postgresql credentials from the postgresql integration.
@@ -235,22 +268,50 @@ class MaubotCharm(ops.CharmBase):
             postgresql credentials.
 
         Raises:
-            MissingPostgreSQLRelationDataError: if relation is not found.
+            MissingRelationDataError: if relation is not found.
         """
         relation = self.model.get_relation("postgresql")
         if not relation or not relation.app:
-            raise MissingPostgreSQLRelationDataError("No postgresql relation data")
+            raise MissingRelationDataError(
+                "No postgresql relation data", relation_name="postgresql"
+            )
         endpoints = self.postgresql.fetch_relation_field(relation.id, "endpoints")
         database = self.postgresql.fetch_relation_field(relation.id, "database")
         username = self.postgresql.fetch_relation_field(relation.id, "username")
         password = self.postgresql.fetch_relation_field(relation.id, "password")
 
         if not endpoints:
-            raise MissingPostgreSQLRelationDataError("Missing mandatory relation data")
+            raise MissingRelationDataError(
+                "Missing mandatory relation data", relation_name="postgresql"
+            )
         primary_endpoint = endpoints.split(",")[0]
         if not all((primary_endpoint, database, username, password)):
-            raise MissingPostgreSQLRelationDataError("Missing mandatory relation data")
+            raise MissingRelationDataError(
+                "Missing mandatory relation data", relation_name="postgresql"
+            )
         return f"postgresql://{username}:{password}@{primary_endpoint}/{database}"
+
+    def _get_matrix_credentials(self) -> dict[str, dict[str, str]]:
+        """Get Matrix credentials from the matrix-auth integration.
+
+        Returns:
+            matrix credentials.
+
+        Raises:
+            MissingRelationDataError: if relation is not found.
+        """
+        relation = self.model.get_relation("matrix-auth")
+        if not relation or not relation.app:
+            logging.warning("no matrix-auth relation found, getting default matrix credentials")
+            return {"matrix": {"url": "https://matrix-client.matrix.org", "secret": "null"}}
+        relation_data = self.matrix_auth.get_remote_relation_data()
+        homeserver = relation_data.homeserver
+        shared_secret_id = relation_data.shared_secret.get_secret_value()
+        if not all((homeserver, shared_secret_id)):
+            raise MissingRelationDataError(
+                "Missing mandatory relation data", relation_name="matrix-auth"
+            )
+        return {"synapse": {"url": homeserver, "secret": shared_secret_id}}
 
     # Properties
     @property

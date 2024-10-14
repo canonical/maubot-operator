@@ -11,30 +11,11 @@ from unittest.mock import Mock
 
 import ops
 import ops.testing
+import pytest
 import requests
+from charms.synapse.v0.matrix_auth import MatrixAuthProviderData
 
-
-def set_postgresql_integration(harness) -> None:
-    """Set postgresql integration.
-
-    Args:
-        harness: harness instance.
-    """
-    relation_data = {
-        "database": "maubot",
-        "endpoints": "dbhost:5432",
-        "password": "somepasswd",  # nosec
-        "username": "someuser",
-    }
-    db_relation_id = harness.add_relation(  # pylint: disable=attribute-defined-outside-init
-        "postgresql", "postgresql"
-    )
-    harness.add_relation_unit(db_relation_id, "postgresql/0")
-    harness.update_relation_data(
-        db_relation_id,
-        "postgresql",
-        relation_data,
-    )
+from charm import MissingRelationDataError
 
 
 def test_maubot_pebble_ready_postgresql_required(harness):
@@ -60,7 +41,9 @@ def test_maubot_pebble_ready(harness):
         the service is running and the charm is active.
     """
     harness.begin()
+    harness.set_can_connect("maubot", True)
     set_postgresql_integration(harness)
+
     expected_plan = {
         "services": {
             "maubot": {
@@ -96,6 +79,8 @@ def test_database_created(harness):
     assert: postgresql credentials are set as expected.
     """
     harness.begin_with_initial_hooks()
+    with pytest.raises(MissingRelationDataError):
+        harness.charm._get_postgresql_credentials()
 
     set_postgresql_integration(harness)
 
@@ -139,7 +124,7 @@ def test_create_admin_action_failed(harness):
         assert e.message == message
 
 
-def test_public_url_config_changed(harness):
+def test_public_url_config_changed(harness, monkeypatch):
     """
     arrange: initialize harness and set postgresql integration.
     act: change public-url config.
@@ -147,6 +132,7 @@ def test_public_url_config_changed(harness):
     """
     harness.begin_with_initial_hooks()
     set_postgresql_integration(harness)
+    set_matrix_auth_integration(harness, monkeypatch)
 
     harness.update_config({"public-url": "https://example1.com"})
 
@@ -283,3 +269,64 @@ def test_register_client_account_action_param_failed(harness):
         message = "error while interacting with Maubot: admin2 not found in admin users"
         assert e.output.results["error"] == message
         assert e.message == message
+
+
+def test_matrix_credentials_registered(harness, monkeypatch):
+    """
+    arrange: initialize harness and verify that the credentials are set with default values.
+    act: set matrix-auth integration.
+    assert: matrix credentials are set as expected.
+    """
+    harness.begin_with_initial_hooks()
+    assert harness.charm._get_matrix_credentials() == {
+        "matrix": {"secret": "null", "url": "https://matrix-client.matrix.org"}
+    }
+
+    set_matrix_auth_integration(harness, monkeypatch)
+
+    assert harness.charm._get_matrix_credentials() == {
+        "synapse": {"secret": "test-shared-secret", "url": "https://example.com"}
+    }
+
+
+def set_matrix_auth_integration(harness, monkeypatch) -> None:
+    """Set matrix-auth integration.
+
+    Args:
+        harness: harness instance.
+        monkeypatch: monkeypatch instance.
+    """
+    monkeypatch.setattr(
+        MatrixAuthProviderData, "get_shared_secret", lambda *args: "test-shared-secret"
+    )
+    relation_data = {"homeserver": "https://example.com", "shared_secret_id": "test-secret-id"}
+    matrix_relation_id = harness.add_relation("matrix-auth", "synapse", app_data=relation_data)
+    harness.add_relation_unit(matrix_relation_id, "synapse/0")
+    harness.update_relation_data(
+        matrix_relation_id,
+        "synapse",
+        relation_data,
+    )
+
+
+def set_postgresql_integration(harness) -> None:
+    """Set postgresql integration.
+
+    Args:
+        harness: harness instance.
+    """
+    relation_data = {
+        "database": "maubot",
+        "endpoints": "dbhost:5432",
+        "password": "somepasswd",  # nosec
+        "username": "someuser",
+    }
+    db_relation_id = harness.add_relation(  # pylint: disable=attribute-defined-outside-init
+        "postgresql", "postgresql"
+    )
+    harness.add_relation_unit(db_relation_id, "postgresql/0")
+    harness.update_relation_data(
+        db_relation_id,
+        "postgresql",
+        relation_data,
+    )
