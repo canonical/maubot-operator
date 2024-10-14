@@ -27,7 +27,7 @@ Exception raised when an event fails.
 ## <kbd>class</kbd> `MaubotCharm`
 Maubot charm. 
 
-<a href="../src/charm.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -85,8 +85,25 @@ Unit that this execution is responsible for.
 
 ---
 
-## <kbd>class</kbd> `MissingPostgreSQLRelationDataError`
-Custom exception to be raised in case of malformed/missing Postgresql relation data. 
+## <kbd>class</kbd> `MissingRelationDataError`
+Custom exception to be raised in case of malformed/missing relation data. 
+
+<a href="../src/charm.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `__init__`
+
+```python
+__init__(message: str, relation_name: str) → None
+```
+
+Init custom exception. 
+
+
+
+**Args:**
+ 
+ - <b>`message`</b>:  Exception message. 
+ - <b>`relation_name`</b>:  Relation name that raised the exception. 
 
 
 

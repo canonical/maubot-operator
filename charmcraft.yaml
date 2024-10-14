@@ -50,6 +50,9 @@ provides:
   metrics-endpoint:
     interface: prometheus_scrape
 requires:
+  matrix-auth:
+    interface: matrix_auth
+    limit: 1
   postgresql:
     interface: postgresql_client
     limit: 1
