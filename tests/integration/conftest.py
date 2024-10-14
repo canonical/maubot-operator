@@ -4,16 +4,19 @@
 """Fixtures for maubot integration tests."""
 
 import json
+from typing import Any, Callable, Coroutine
 
 import pytest_asyncio
 from pytest_operator.plugin import OpsTest
 
 
 @pytest_asyncio.fixture(scope="function", name="get_unit_ips")
-async def fixture_get_unit_ips(ops_test: OpsTest):
+async def fixture_get_unit_ips(
+    ops_test: OpsTest,
+) -> Callable[..., Coroutine[Any, Any, tuple[Any, ...]]]:
     """Return an async function to retrieve unit ip addresses of a certain application."""
 
-    async def get_unit_ips(application_name: str):
+    async def get_unit_ips(application_name: str) -> tuple[Any, ...]:
         """Retrieve unit ip addresses of a certain application.
 
         Args:
