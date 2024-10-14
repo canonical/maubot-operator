@@ -79,7 +79,7 @@ def test_database_created(harness):
     assert: postgresql credentials are set as expected.
     """
     harness.begin_with_initial_hooks()
-    with pytest.raises(MissingRelationDataError):
+    with pytest.raises(MissingRelationDataError, match="No postgresql relation data"):
         harness.charm._get_postgresql_credentials()
 
     set_postgresql_integration(harness)
