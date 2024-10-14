@@ -150,6 +150,7 @@ def test_register_client_account_action_success(harness, monkeypatch):
     harness.set_leader()
     harness.begin_with_initial_hooks()
     set_postgresql_integration(harness)
+    set_matrix_auth_integration(harness, monkeypatch)
 
     class MockResponse:
         """Mock response"""
@@ -228,6 +229,7 @@ def test_register_client_account_action_api_failed(harness, monkeypatch):
     harness.set_leader()
     harness.begin_with_initial_hooks()
     set_postgresql_integration(harness)
+    set_matrix_auth_integration(harness, monkeypatch)
     monkeypatch.setattr(
         requests,
         "post",
@@ -251,7 +253,7 @@ def test_register_client_account_action_api_failed(harness, monkeypatch):
         assert e.message == message
 
 
-def test_register_client_account_action_param_failed(harness):
+def test_register_client_account_action_param_failed(harness, monkeypatch):
     """
     arrange: initialize the testing harness and set up all required integration.
     act: run register-client-account charm action with non-existent user.
@@ -260,6 +262,7 @@ def test_register_client_account_action_param_failed(harness):
     harness.set_leader()
     harness.begin_with_initial_hooks()
     set_postgresql_integration(harness)
+    set_matrix_auth_integration(harness, monkeypatch)
     try:
         harness.run_action(
             "register-client-account",
@@ -267,6 +270,26 @@ def test_register_client_account_action_param_failed(harness):
         )
     except ops.testing.ActionFailed as e:
         message = "error while interacting with Maubot: admin2 not found in admin users"
+        assert e.output.results["error"] == message
+        assert e.message == message
+
+
+def test_register_client_account_action_matrix_auth_failed(harness):
+    """
+    arrange: initialize the testing harness and set up all required integration except matrix-auth.
+    act: run register-client-account charm action.
+    assert: event fails.
+    """
+    harness.set_leader()
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+    try:
+        harness.run_action(
+            "register-client-account",
+            {"admin-name": "admin", "admin-password": "password", "account-name": "bot1"},
+        )
+    except ops.testing.ActionFailed as e:
+        message = "error while interacting with Maubot: matrix-auth integration is required"
         assert e.output.results["error"] == message
         assert e.message == message
 

@@ -29,8 +29,10 @@ from ops import pebble
 
 logger = logging.getLogger(__name__)
 
+MATRIX_AUTH_HOMESERVER = "synapse"
 MAUBOT_CONFIGURATION_PATH = "/data/config.yaml"
 MAUBOT_NAME = "maubot"
+MAUBOT_ROOT_URL = "http://localhost:29316/_matrix/maubot"
 NGINX_NAME = "nginx"
 
 
@@ -224,21 +226,22 @@ class MaubotCharm(ops.CharmBase):
                 or not self.container.get_service(MAUBOT_NAME).is_running()
             ):
                 raise EventFailError("maubot is not ready")
-            # draft if no matrix-auth integration, fail
+            config = self._get_configuration()
+            if MATRIX_AUTH_HOMESERVER not in config["homeservers"]:
+                raise EventFailError("matrix-auth integration is required")
             admin_name = event.params["admin-name"]
             admin_password = event.params["admin-password"]
-            config = self._get_configuration()
             if admin_name not in config["admins"]:
                 raise EventFailError(f"{admin_name} not found in admin users")
             # Login in Maubot
-            url = "http://localhost:29316/_matrix/maubot/v1/auth/login"
+            url = f"{MAUBOT_ROOT_URL}/v1/auth/login"
             payload = {"username": admin_name, "password": admin_password}
             response = requests.post(url, json=payload, timeout=5)
             response.raise_for_status()
             token = response.json().get("token")
             # Register Matrix Account
             account_name = event.params["account-name"]
-            url = "http://localhost:29316/_matrix/maubot/v1/client/auth/synapse/register"
+            url = f"{MAUBOT_ROOT_URL}/v1/client/auth/{MATRIX_AUTH_HOMESERVER}/register"
             password = secrets.token_urlsafe(10)
             payload = {"username": account_name, "password": password}
             headers = {"Authorization": f"Bearer {token}"}
@@ -311,7 +314,7 @@ class MaubotCharm(ops.CharmBase):
             raise MissingRelationDataError(
                 "Missing mandatory relation data", relation_name="matrix-auth"
             )
-        return {"synapse": {"url": homeserver, "secret": shared_secret_id}}
+        return {MATRIX_AUTH_HOMESERVER: {"url": homeserver, "secret": shared_secret_id}}
 
     # Properties
     @property
