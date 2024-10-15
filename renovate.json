@@ -21,6 +21,15 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "maubot/maubot",
       "versioningTemplate": "semver-coerced"
+    },
+    {
+      "fileMatch": ["(^|/)rockcraft.yaml$"],
+      "description": "Update Blackbox",
+      "matchStringsStrategy": "any",
+      "matchStrings": ["v(?<currentValue>.+)\/blackbox_exporter","blackbox_exporter-(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "prometheus/blackbox_exporter",
+      "versioningTemplate": "semver-coerced"
     }
   ],
   "packageRules": [
