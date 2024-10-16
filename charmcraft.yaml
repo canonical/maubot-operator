@@ -86,4 +86,4 @@ actions:
           for creating the account.
       account-name:
         type: string
-        description: The account name.
+        description: The Matrix account you want to use as a bot.
