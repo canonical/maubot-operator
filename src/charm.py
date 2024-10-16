@@ -19,6 +19,8 @@ from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseEndpointsChangedEvent,
     DatabaseRequires,
 )
+from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.synapse.v0.matrix_auth import MatrixAuthRequestProcessed, MatrixAuthRequires
 from charms.traefik_k8s.v2.ingress import (
     IngressPerAppReadyEvent,
@@ -29,6 +31,7 @@ from ops import pebble
 
 logger = logging.getLogger(__name__)
 
+BLACKBOX_NAME = "blackbox"
 MATRIX_AUTH_HOMESERVER = "synapse"
 MAUBOT_CONFIGURATION_PATH = "/data/config.yaml"
 MAUBOT_NAME = "maubot"
@@ -65,7 +68,12 @@ class MaubotCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self.container = self.unit.get_container(MAUBOT_NAME)
+        self.grafana_dashboards = GrafanaDashboardProvider(self)
         self.ingress = IngressPerAppRequirer(self, port=8080)
+        self.metrics_endpoint = MetricsEndpointProvider(
+            self,
+            jobs=self._probes_scraping_job,
+        )
         self.postgresql = DatabaseRequires(
             self, relation_name="postgresql", database_name=self.app.name
         )
@@ -139,6 +147,7 @@ class MaubotCharm(ops.CharmBase):
         self.container.add_layer(MAUBOT_NAME, self._pebble_layer, combine=True)
         self.container.restart(MAUBOT_NAME)
         self.container.restart(NGINX_NAME)
+        self.container.restart(BLACKBOX_NAME)
         self.unit.status = ops.ActiveStatus()
 
     def _on_maubot_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
@@ -309,7 +318,10 @@ class MaubotCharm(ops.CharmBase):
             return {"matrix": {"url": "https://matrix-client.matrix.org", "secret": "null"}}
         relation_data = self.matrix_auth.get_remote_relation_data()
         homeserver = relation_data.homeserver
-        shared_secret_id = relation_data.shared_secret.get_secret_value()
+        # pylint does not detect get_secret_value because it is dynamically created by pydantic
+        shared_secret_id = (
+            relation_data.shared_secret.get_secret_value()  # pylint: disable=no-member
+        )
         if not all((homeserver, shared_secret_id)):
             raise MissingRelationDataError(
                 "Missing mandatory relation data", relation_name="matrix-auth"
@@ -324,6 +336,12 @@ class MaubotCharm(ops.CharmBase):
             "summary": "maubot layer",
             "description": "pebble config layer for maubot",
             "services": {
+                BLACKBOX_NAME: {
+                    "override": "replace",
+                    "summary": "blackbox-exporter",
+                    "command": "/usr/bin/blackbox_exporter --config.file=/etc/blackbox.yaml",
+                    "startup": "enabled",
+                },
                 NGINX_NAME: {
                     "override": "replace",
                     "summary": "nginx",
@@ -340,6 +358,31 @@ class MaubotCharm(ops.CharmBase):
                 },
             },
         }
+
+    @property
+    def _probes_scraping_job(self) -> list:
+        """The scraping job to execute probes from Prometheus."""
+        probe = {
+            "job_name": "blackbox_maubot",
+            "metrics_path": "/probe",
+            "params": {"module": ["http_2xx"]},
+            "static_configs": [{"targets": ["http://127.0.0.1:29316/_matrix/maubot/"]}],
+        }
+        unit_name = self.unit.name.replace("/", "-")
+        app_name = self.app.name
+        endpoint_address = f"{unit_name}.{app_name}-endpoints.{self.model.name}.svc.cluster.local"
+        # The relabel configs come from the official Blackbox Exporter docs; please refer
+        # to that for further information on what they do
+        probe["relabel_configs"] = [
+            {"source_labels": ["__address__"], "target_label": "__param_target"},
+            {"source_labels": ["__param_target"], "target_label": "instance"},
+            # Copy the scrape job target to an extra label for dashboard usage
+            {"source_labels": ["__param_target"], "target_label": "probe_target"},
+            # Set the address to scrape to the blackbox exporter url
+            {"target_label": "__address__", "replacement": f"{endpoint_address}:9115"},
+        ]
+
+        return [probe]
 
 
 if __name__ == "__main__":  # pragma: nocover

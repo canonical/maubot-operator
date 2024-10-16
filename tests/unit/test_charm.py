@@ -60,6 +60,12 @@ def test_maubot_pebble_ready(harness):
                 "startup": "enabled",
                 "after": ["maubot"],
             },
+            "blackbox": {
+                "command": "/usr/bin/blackbox_exporter --config.file=/etc/blackbox.yaml",
+                "override": "replace",
+                "startup": "enabled",
+                "summary": "blackbox-exporter",
+            },
         },
     }
 

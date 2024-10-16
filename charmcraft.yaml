@@ -44,6 +44,11 @@ parts:
       - rustc
 platforms:
   amd64:
+provides:
+  grafana-dashboard:
+    interface: grafana_dashboard
+  metrics-endpoint:
+    interface: prometheus_scrape
 requires:
   matrix-auth:
     interface: matrix_auth

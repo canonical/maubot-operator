@@ -35,6 +35,19 @@ parts:
     override-build: |
       craftctl default
       rm $CRAFT_PART_INSTALL/etc/nginx/nginx.conf
+  blackbox-exporter:
+    plugin: dump
+    source: https://github.com/prometheus/blackbox_exporter/releases/download/v0.25.0/blackbox_exporter-0.25.0.linux-amd64.tar.gz
+    source-type: tar
+    organize:
+      'blackbox_exporter': usr/bin/
+    stage:
+      - usr/
+  blackbox-exporter-conf:
+    plugin: dump
+    source: .
+    organize:
+      blackbox.yaml: etc/blackbox.yaml
   maubot:
     plugin: python
     source: .

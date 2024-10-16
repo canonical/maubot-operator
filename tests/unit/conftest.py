@@ -1,7 +1,8 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Fixtures for maubotunit tests."""
+"""Fixtures for maubot unit tests."""
+
 
 import pytest
 from ops.testing import Harness
