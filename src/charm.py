@@ -235,19 +235,23 @@ class MaubotCharm(ops.CharmBase):
                 or not self.container.get_service(MAUBOT_NAME).is_running()
             ):
                 raise EventFailError("maubot is not ready")
+
             config = self._get_configuration()
             if MATRIX_AUTH_HOMESERVER not in config["homeservers"]:
                 raise EventFailError("matrix-auth integration is required")
+
             admin_name = event.params["admin-name"]
             admin_password = event.params["admin-password"]
             if admin_name not in config["admins"]:
                 raise EventFailError(f"{admin_name} not found in admin users")
+
             # Login in Maubot
             url = f"{MAUBOT_ROOT_URL}/v1/auth/login"
             payload = {"username": admin_name, "password": admin_password}
             response = requests.post(url, json=payload, timeout=5)
             response.raise_for_status()
             token = response.json().get("token")
+
             # Register Matrix Account
             account_name = event.params["account-name"]
             url = f"{MAUBOT_ROOT_URL}/v1/client/auth/{MATRIX_AUTH_HOMESERVER}/register"
@@ -257,6 +261,7 @@ class MaubotCharm(ops.CharmBase):
             response = requests.post(url, json=payload, headers=headers, timeout=5)
             response.raise_for_status()
             data = response.json()
+
             # Set results
             results["user-id"] = data.get("user_id")
             results["password"] = password
