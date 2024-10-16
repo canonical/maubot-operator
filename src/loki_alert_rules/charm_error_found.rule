@@ -1,0 +1,8 @@
+alert: MaubotCharmErrorFound
+expr: rate({%%juju_topology%%, charm_name="maubot", severity="error"}[1m]) > 0
+for: 1m
+labels:
+  severity: critical
+annotations:
+  summary: 'Maubot charm error detected in hook {{ $labels.juju_hook_name }}.'
+  description: This alert is triggered when the Maubot charm logs an error level message in the last minute.
