@@ -19,6 +19,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseRequires,
 )
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.synapse.v0.matrix_auth import MatrixAuthRequestProcessed, MatrixAuthRequires
 from charms.traefik_k8s.v2.ingress import (
@@ -67,6 +68,7 @@ class MaubotCharm(ops.CharmBase):
         self.container = self.unit.get_container(MAUBOT_NAME)
         self.grafana_dashboards = GrafanaDashboardProvider(self)
         self.ingress = IngressPerAppRequirer(self, port=8080)
+        self._log_forwarder = LogForwarder(self)
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
             jobs=self._probes_scraping_job,
