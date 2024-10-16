@@ -1,8 +1,10 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# unnecessary-pass test_register_client_account_action_success:raise_for_status
-# unused-argument test_register_client_account_action_success:side_effect
+# unnecessary-pass: disabled because of raise_for_status
+#   in test_register_client_account_action_success
+# unused-argument: disabled because of side_effect
+#   in test_register_client_account_action_success
 # pylint: disable=protected-access, duplicate-code, line-too-long, unnecessary-pass, unused-argument  # noqa:E501,W505
 
 """Unit tests."""
