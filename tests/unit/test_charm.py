@@ -256,7 +256,7 @@ def test_register_client_account_action_api_failed(harness, monkeypatch):
             {"admin-name": "admin1", "admin-password": "password", "account-name": "bot1"},
         )
     except ops.testing.ActionFailed as e:
-        message = "error while interacting with Maubot: 500 Server Error"
+        message = "error while interacting with Maubot API"
         assert e.output.results["error"] == message
         assert e.message == message
 
@@ -277,7 +277,7 @@ def test_register_client_account_action_param_failed(harness, monkeypatch):
             {"admin-name": "admin2", "admin-password": "password", "account-name": "bot1"},
         )
     except ops.testing.ActionFailed as e:
-        message = "error while interacting with Maubot: admin2 not found in admin users"
+        message = "admin2 not found in admin users"
         assert e.output.results["error"] == message
         assert e.message == message
 
@@ -297,7 +297,7 @@ def test_register_client_account_action_matrix_auth_failed(harness):
             {"admin-name": "admin", "admin-password": "password", "account-name": "bot1"},
         )
     except ops.testing.ActionFailed as e:
-        message = "error while interacting with Maubot: matrix-auth integration is required"
+        message = "matrix-auth integration is required"
         assert e.output.results["error"] == message
         assert e.message == message
 

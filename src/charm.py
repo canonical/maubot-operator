@@ -262,10 +262,15 @@ class MaubotCharm(ops.CharmBase):
             results["access-token"] = data.get("access_token")
             results["device-id"] = data.get("device_id")
             event.set_results(results)
-        except (EventFailError, requests.exceptions.RequestException, TimeoutError) as e:
-            results["error"] = f"error while interacting with Maubot: {str(e)}"
+        except (requests.exceptions.RequestException, TimeoutError) as e:
+            logger.exception("failed to request Maubot API: %s", str(e))
+            results["error"] = "error while interacting with Maubot API"
             event.set_results(results)
-            event.fail(f"error while interacting with Maubot: {str(e)}")
+            event.fail("error while interacting with Maubot API")
+        except EventFailError as e:
+            results["error"] = str(e)
+            event.set_results(results)
+            event.fail(str(e))
 
     def _on_matrix_auth_request_processed(self, _: MatrixAuthRequestProcessed) -> None:
         """Handle matrix auth request processed event."""
