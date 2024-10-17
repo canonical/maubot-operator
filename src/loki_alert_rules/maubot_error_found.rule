@@ -1,0 +1,8 @@
+alert: MaubotErrorFound
+expr: rate({%%juju_topology%%, pebble_service="maubot"} |= "level=error"[1m]) > 0
+for: 1m
+labels:
+  severity: critical
+annotations:
+  summary: Maubot errors detected.
+  description: This alert is triggered when Maubot logs an error level message in the last minute.

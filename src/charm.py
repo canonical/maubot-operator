@@ -5,11 +5,14 @@
 
 # Learn more at: https://juju.is/docs/sdk
 
+# Charm class has many attributes.
+# pylint: disable=too-many-instance-attributes
+
 """Maubot charm service."""
 
 import logging
 import secrets
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import ops
 import yaml
@@ -19,6 +22,12 @@ from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseRequires,
 )
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
+from charms.loki_k8s.v0.charm_logging import log_charm
+from charms.loki_k8s.v1.loki_push_api import (
+    LogForwarder,
+    LokiPushApiConsumer,
+    charm_logging_config,
+)
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.synapse.v0.matrix_auth import MatrixAuthRequestProcessed, MatrixAuthRequires
 from charms.traefik_k8s.v2.ingress import (
@@ -54,6 +63,7 @@ class EventFailError(Exception):
     """Exception raised when an event fails."""
 
 
+@log_charm(logging_endpoints="_loki_push_api_urls")
 class MaubotCharm(ops.CharmBase):
     """Maubot charm."""
 
@@ -67,6 +77,12 @@ class MaubotCharm(ops.CharmBase):
         self.container = self.unit.get_container(MAUBOT_NAME)
         self.grafana_dashboards = GrafanaDashboardProvider(self)
         self.ingress = IngressPerAppRequirer(self, port=8080)
+        self._log_forwarder = LogForwarder(self)
+        # logging, _cert_path, _loki_push_api_urls and _charm_endpoint are
+        # required for setting log_charm.
+        self.logging = LokiPushApiConsumer(self)
+        self._cert_path = None
+        self._charm_endpoint, _ = charm_logging_config(self.logging, self._cert_path)
         self.metrics_endpoint = MetricsEndpointProvider(
             self,
             jobs=self._probes_scraping_job,
@@ -88,6 +104,11 @@ class MaubotCharm(ops.CharmBase):
             self.matrix_auth.on.matrix_auth_request_processed,
             self._on_matrix_auth_request_processed,
         )
+
+    @property
+    def _loki_push_api_urls(self) -> Optional[List[str]]:
+        """Return loki urls as required by log_charm (charm_logging library)."""
+        return [endpoint["url"] for endpoint in self.logging.loki_endpoints]
 
     def _get_configuration(self) -> Dict[str, Any]:
         """Get Maubot configuration content.
