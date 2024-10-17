@@ -187,7 +187,7 @@ class MaubotCharm(ops.CharmBase):
         """
         try:
             name = event.params["name"]
-            results = {"password": "", "error": ""}
+            results: dict[str, str] = {}
             if name == "root":
                 raise EventFailError("root is reserved, please choose a different name")
             if (
@@ -222,13 +222,7 @@ class MaubotCharm(ops.CharmBase):
             EventFailError: in case the event fails.
         """
         try:
-            results: dict[str, str] = {
-                "user-id": "",
-                "password": "",
-                "access-token": "",
-                "device-id": "",
-                "error": "",
-            }
+            results: dict[str, str] = {}
             if (
                 not self.container.can_connect()
                 or MAUBOT_NAME not in self.container.get_plan().services

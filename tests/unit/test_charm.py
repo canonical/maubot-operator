@@ -111,7 +111,7 @@ def test_create_admin_action_success(harness):
     action = harness.run_action("create-admin", {"name": "test"})
 
     assert "password" in action.results
-    assert "error" in action.results and not action.results["error"]
+    assert "error" not in action.results
 
 
 def test_create_admin_action_failed(harness):
@@ -225,7 +225,7 @@ def test_register_client_account_action_success(harness, monkeypatch):
     assert action.results["access-token"] == "syt_YW1hbmRhYm90_yPAPaSqGISEDKZsbBETi_2XI5KE"
     assert action.results["device-id"] == "GYPCJQXJDJ"
     assert action.results["user-id"] == "@bot1:banana.com"
-    assert "error" in action.results and not action.results["error"]
+    assert "error" not in action.results
 
 
 def test_register_client_account_action_api_failed(harness, monkeypatch):
