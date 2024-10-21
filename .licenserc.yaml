@@ -15,6 +15,7 @@ header:
     - '**/*.conf'
     - '**/*.json'
     - '**/*.md'
+    - '**/*.rule'
     - '**/*.txt'
     - '.jujuignore'
     - '.gitignore'

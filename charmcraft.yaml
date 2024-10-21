@@ -50,6 +50,10 @@ provides:
   metrics-endpoint:
     interface: prometheus_scrape
 requires:
+  logging:
+    interface: loki_push_api
+    optional: true
+    limit: 1
   matrix-auth:
     interface: matrix_auth
     limit: 1
