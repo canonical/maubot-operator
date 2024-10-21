@@ -15,6 +15,7 @@ import secrets
 from typing import Any, Dict, List, Optional
 
 import ops
+import requests
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
@@ -40,8 +41,10 @@ from ops import pebble
 logger = logging.getLogger(__name__)
 
 BLACKBOX_NAME = "blackbox"
+MATRIX_AUTH_HOMESERVER = "synapse"
 MAUBOT_CONFIGURATION_PATH = "/data/config.yaml"
 MAUBOT_NAME = "maubot"
+MAUBOT_ROOT_URL = "http://localhost:29316/_matrix/maubot"
 NGINX_NAME = "nginx"
 
 
@@ -95,6 +98,9 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         # Actions events handlers
         self.framework.observe(self.on.create_admin_action, self._on_create_admin_action)
+        self.framework.observe(
+            self.on.register_client_account_action, self._on_register_client_account_action
+        )
         # Integrations events handlers
         self.framework.observe(self.postgresql.on.database_created, self._on_database_created)
         self.framework.observe(self.postgresql.on.endpoints_changed, self._on_endpoints_changed)
@@ -174,6 +180,14 @@ class MaubotCharm(ops.CharmBase):
         self._reconcile()
 
     # Integrations events handlers
+    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
+        """Handle database created event."""
+        self._reconcile()
+
+    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
+        """Handle endpoints changed event."""
+        self._reconcile()
+
     def _on_ingress_ready(self, _: IngressPerAppReadyEvent) -> None:
         """Handle ingress ready event."""
         self._reconcile()
@@ -194,7 +208,7 @@ class MaubotCharm(ops.CharmBase):
         """
         try:
             name = event.params["name"]
-            results = {"password": "", "error": ""}
+            results: dict[str, str] = {}
             if name == "root":
                 raise EventFailError("root is reserved, please choose a different name")
             if (
@@ -217,14 +231,67 @@ class MaubotCharm(ops.CharmBase):
             event.set_results(results)
             event.fail(str(e))
 
-    # Integrations events handlers
-    def _on_database_created(self, _: DatabaseCreatedEvent) -> None:
-        """Handle database created event."""
-        self._reconcile()
+    def _on_register_client_account_action(self, event: ops.ActionEvent) -> None:
+        """Handle register-client-account action.
 
-    def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
-        """Handle endpoints changed event."""
-        self._reconcile()
+        Matrix-auth integration required.
+
+        Args:
+            event: Action event.
+
+        Raises:
+            EventFailError: in case the event fails.
+        """
+        try:
+            results: dict[str, str] = {}
+            if (
+                not self.container.can_connect()
+                or MAUBOT_NAME not in self.container.get_plan().services
+                or not self.container.get_service(MAUBOT_NAME).is_running()
+            ):
+                raise EventFailError("maubot is not ready")
+
+            config = self._get_configuration()
+            if MATRIX_AUTH_HOMESERVER not in config["homeservers"]:
+                raise EventFailError("matrix-auth integration is required")
+
+            admin_name = event.params["admin-name"]
+            admin_password = event.params["admin-password"]
+            if admin_name not in config["admins"]:
+                raise EventFailError(f"{admin_name} not found in admin users")
+
+            # Login in Maubot
+            url = f"{MAUBOT_ROOT_URL}/v1/auth/login"
+            payload = {"username": admin_name, "password": admin_password}
+            response = requests.post(url, json=payload, timeout=5)
+            response.raise_for_status()
+            token = response.json().get("token")
+
+            # Register Matrix Account
+            account_name = event.params["account-name"]
+            url = f"{MAUBOT_ROOT_URL}/v1/client/auth/{MATRIX_AUTH_HOMESERVER}/register"
+            password = secrets.token_urlsafe(10)
+            payload = {"username": account_name, "password": password}
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.post(url, json=payload, headers=headers, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+
+            # Set results
+            results["user-id"] = data.get("user_id")
+            results["password"] = password
+            results["access-token"] = data.get("access_token")
+            results["device-id"] = data.get("device_id")
+            event.set_results(results)
+        except (requests.exceptions.RequestException, TimeoutError) as e:
+            logger.exception("failed to request Maubot API: %s", str(e))
+            results["error"] = "error while interacting with Maubot API"
+            event.set_results(results)
+            event.fail("error while interacting with Maubot API")
+        except EventFailError as e:
+            results["error"] = str(e)
+            event.set_results(results)
+            event.fail(str(e))
 
     def _on_matrix_auth_request_processed(self, _: MatrixAuthRequestProcessed) -> None:
         """Handle matrix auth request processed event."""
@@ -284,7 +351,7 @@ class MaubotCharm(ops.CharmBase):
             raise MissingRelationDataError(
                 "Missing mandatory relation data", relation_name="matrix-auth"
             )
-        return {"synapse": {"url": homeserver, "secret": shared_secret_id}}
+        return {MATRIX_AUTH_HOMESERVER: {"url": homeserver, "secret": shared_secret_id}}
 
     # Properties
     @property
