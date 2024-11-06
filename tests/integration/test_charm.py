@@ -235,12 +235,15 @@ async def test_register_client_account_action_success(ops_test: OpsTest):
     assert response.status_code == 200
     assert "token" in response.text
     # relate maubot with synapse
+    # setting public_baseurl to an URL that Maubot can access
+    # in production environment, this is the external URL accessed by clients
+    matrix_server_name = "test1"
     await ops_test.model.deploy(
         "synapse",
         application_name="synapse",
         channel="latest/edge",
         config={
-            "server_name": "test1",
+            "server_name": matrix_server_name,
             "public_baseurl": "http://synapse-0.synapse-endpoints.testing.svc.cluster.local:8080/",
         },
     )
@@ -249,7 +252,10 @@ async def test_register_client_account_action_success(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(status="active")
 
     # run the action
-    params = {"account-name": "myaccount", "admin-name": name, "admin-password": password}
+    account_name = secrets.token_urlsafe(5).lower()
+    params = {"account-name": account_name, "admin-name": name, "admin-password": password}
     action = await unit.run_action("register-client-account", **params)
     await action.wait()
     assert "access-token" in action.results
+    assert "device-id" in action.results
+    assert action.results["user-id"] == f"@{account_name}:{matrix_server_name}"
