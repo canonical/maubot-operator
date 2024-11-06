@@ -239,7 +239,10 @@ async def test_register_client_account_action_success(ops_test: OpsTest):
         "synapse",
         application_name="synapse",
         channel="latest/edge",
-        config={"server_name": "test1"},
+        config={
+            "server_name": "test1",
+            "public_baseurl": "http://synapse-0.synapse-endpoints.testing.svc.cluster.local:8080/",
+        },
     )
     await ops_test.model.wait_for_idle(status="active")
     await ops_test.model.add_relation("synapse:matrix-auth", "maubot:matrix-auth")
