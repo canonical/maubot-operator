@@ -246,9 +246,7 @@ async def test_register_client_account_action_success(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(status="active")
 
     # run the action
-    action = await unit.run_action(
-        "register-client-account",
-        {"account-name": "myaccount", "admin-name": name, "admin-password": password},
-    )
+    params = {"account-name": "myaccount", "admin-name": name, "admin-password": password}
+    action = await unit.run_action("register-client-account", **params)
     await action.wait()
     assert "access-token" in action.results
