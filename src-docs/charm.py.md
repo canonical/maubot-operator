@@ -11,7 +11,6 @@ Maubot charm service.
 - **MATRIX_AUTH_HOMESERVER**
 - **MAUBOT_CONFIGURATION_PATH**
 - **MAUBOT_NAME**
-- **MAUBOT_ROOT_URL**
 - **NGINX_NAME**
 
 

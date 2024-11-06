@@ -15,7 +15,6 @@ import secrets
 from typing import Any, Dict, List, Optional
 
 import ops
-import requests
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import (
     DatabaseCreatedEvent,
@@ -38,13 +37,14 @@ from charms.traefik_k8s.v2.ingress import (
 )
 from ops import pebble
 
+import maubot
+
 logger = logging.getLogger(__name__)
 
 BLACKBOX_NAME = "blackbox"
 MATRIX_AUTH_HOMESERVER = "synapse"
 MAUBOT_CONFIGURATION_PATH = "/data/config.yaml"
 MAUBOT_NAME = "maubot"
-MAUBOT_ROOT_URL = "http://localhost:29316/_matrix/maubot"
 NGINX_NAME = "nginx"
 
 
@@ -211,11 +211,7 @@ class MaubotCharm(ops.CharmBase):
             results: dict[str, str] = {}
             if name == "root":
                 raise EventFailError("root is reserved, please choose a different name")
-            if (
-                not self.container.can_connect()
-                or MAUBOT_NAME not in self.container.get_plan().services
-                or not self.container.get_service(MAUBOT_NAME).is_running()
-            ):
+            if self._is_maubot_ready():
                 raise EventFailError("maubot is not ready")
             password = secrets.token_urlsafe(10)
             config = self._get_configuration()
@@ -244,11 +240,7 @@ class MaubotCharm(ops.CharmBase):
         """
         try:
             results: dict[str, str] = {}
-            if (
-                not self.container.can_connect()
-                or MAUBOT_NAME not in self.container.get_plan().services
-                or not self.container.get_service(MAUBOT_NAME).is_running()
-            ):
+            if self._is_maubot_ready():
                 raise EventFailError("maubot is not ready")
 
             config = self._get_configuration()
@@ -261,37 +253,40 @@ class MaubotCharm(ops.CharmBase):
                 raise EventFailError(f"{admin_name} not found in admin users")
 
             # Login in Maubot
-            url = f"{MAUBOT_ROOT_URL}/v1/auth/login"
-            payload = {"username": admin_name, "password": admin_password}
-            response = requests.post(url, json=payload, timeout=5)
-            response.raise_for_status()
-            token = response.json().get("token")
+            token = maubot.login(admin_name=admin_name, admin_password=admin_password)
 
             # Register Matrix Account
             account_name = event.params["account-name"]
-            url = f"{MAUBOT_ROOT_URL}/v1/client/auth/{MATRIX_AUTH_HOMESERVER}/register"
-            password = secrets.token_urlsafe(10)
-            payload = {"username": account_name, "password": password}
-            headers = {"Authorization": f"Bearer {token}"}
-            response = requests.post(url, json=payload, headers=headers, timeout=5)
-            response.raise_for_status()
-            data = response.json()
+            account_password = secrets.token_urlsafe(10)
+            account_data = maubot.register_account(
+                token=token,
+                account_name=account_name,
+                account_password=account_password,
+                matrix_server=MATRIX_AUTH_HOMESERVER,
+            )
 
             # Set results
-            results["user-id"] = data.get("user_id")
-            results["password"] = password
-            results["access-token"] = data.get("access_token")
-            results["device-id"] = data.get("device_id")
+            results["user-id"] = account_data.get("user_id")
+            results["password"] = account_password
+            results["access-token"] = account_data.get("access_token")
+            results["device-id"] = account_data.get("device_id")
             event.set_results(results)
-        except (requests.exceptions.RequestException, TimeoutError) as e:
-            logger.exception("failed to request Maubot API: %s", str(e))
-            results["error"] = "error while interacting with Maubot API"
-            event.set_results(results)
-            event.fail("error while interacting with Maubot API")
-        except EventFailError as e:
+        except (maubot.APIError, EventFailError) as e:
             results["error"] = str(e)
             event.set_results(results)
             event.fail(str(e))
+
+    def _is_maubot_ready(self) -> bool:
+        """Check if Maubot container is ready.
+
+        Returns:
+            True if Maubot is ready.
+        """
+        return (
+            not self.container.can_connect()
+            or MAUBOT_NAME not in self.container.get_plan().services
+            or not self.container.get_service(MAUBOT_NAME).is_running()
+        )
 
     def _on_matrix_auth_request_processed(self, _: MatrixAuthRequestProcessed) -> None:
         """Handle matrix auth request processed event."""
