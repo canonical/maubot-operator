@@ -6,6 +6,7 @@
 """Integration tests."""
 
 import logging
+import secrets
 import typing
 
 import pytest
@@ -208,3 +209,53 @@ async def test_public_url_config(
     data = response.json()
     assert "api_path" in data
     assert data["api_path"] == "/internal/_matrix/maubot/v1"
+
+
+async def test_register_client_account_action_success(ops_test: OpsTest):
+    """
+    arrange: Maubot charm integrated with PostgreSQL and AnyCharm(matrix-auth)
+        and admin user is created.
+    act: run the register-client-account action.
+    assert: the action results contains a password.
+    """
+    # create user
+    name = secrets.token_urlsafe(5)
+    assert ops_test.model
+    unit = ops_test.model.applications["maubot"].units[0]
+    action = await unit.run_action("create-admin", name=name)
+    await action.wait()
+    assert "password" in action.results
+    password = action.results["password"]
+    response = requests.post(
+        "http://127.0.0.1/_matrix/maubot/v1/auth/login",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+        data=f'{{"username":"{name}","password":"{password}"}}',
+    )
+    assert response.status_code == 200
+    assert "token" in response.text
+    # relate maubot with synapse
+    # setting public_baseurl to an URL that Maubot can access
+    # in production environment, this is the external URL accessed by clients
+    matrix_server_name = "test1"
+    await ops_test.model.deploy(
+        "synapse",
+        application_name="synapse",
+        channel="latest/edge",
+        config={
+            "server_name": matrix_server_name,
+            "public_baseurl": "http://synapse-0.synapse-endpoints.testing.svc.cluster.local:8080/",
+        },
+    )
+    await ops_test.model.wait_for_idle(status="active")
+    await ops_test.model.add_relation("synapse:matrix-auth", "maubot:matrix-auth")
+    await ops_test.model.wait_for_idle(status="active")
+
+    # run the action
+    account_name = secrets.token_urlsafe(5).lower()
+    params = {"account-name": account_name, "admin-name": name, "admin-password": password}
+    action = await unit.run_action("register-client-account", **params)
+    await action.wait()
+    assert "access-token" in action.results
+    assert "device-id" in action.results
+    assert action.results["user-id"] == f"@{account_name}:{matrix_server_name}"

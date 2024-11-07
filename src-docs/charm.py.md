@@ -8,6 +8,7 @@ Maubot charm service.
 **Global Variables**
 ---------------
 - **BLACKBOX_NAME**
+- **MATRIX_AUTH_HOMESERVER**
 - **MAUBOT_CONFIGURATION_PATH**
 - **MAUBOT_NAME**
 - **NGINX_NAME**
@@ -27,7 +28,7 @@ Exception raised when an event fails.
 ## <kbd>class</kbd> `MaubotCharm`
 Maubot charm. 
 
-<a href="../lib/charms/loki_k8s/v0/charm_logging.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../lib/charms/loki_k8s/v0/charm_logging.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -88,7 +89,7 @@ Unit that this execution is responsible for.
 ## <kbd>class</kbd> `MissingRelationDataError`
 Custom exception to be raised in case of malformed/missing relation data. 
 
-<a href="../src/charm.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/charm.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
