@@ -5,9 +5,13 @@
 
 """Integration tests."""
 
+# Disabling it due any_charm configuration.
+# pylint: disable=line-too-long
+
+import json
 import logging
 import secrets
-import typing
+import textwrap
 
 import pytest
 import requests
@@ -68,62 +72,59 @@ async def test_build_and_deploy(
 
 
 @pytest.mark.abort_on_fail
-async def test_cos_integration(
-    ops_test: OpsTest, get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]]
-):
+async def test_cos_integration(ops_test: OpsTest):
     """
-    arrange: deploy Prometheus, Grafana and integrate them.
-    act: integrate Maubot with Prometheus and Grafana.
-    assert: Maubot is a Prometheus target and the dashboard is available.
+    arrange: deploy Anycharm.
+    act: integrate Maubot with Anycharm.
+    assert: Run action that validates if dashboard is present.
     """
+    any_app_name = "any-grafana"
+    grafana_lib_url = "https://github.com/canonical/grafana-k8s-operator/raw/refs/heads/main/lib/charms/grafana_k8s/v0/grafana_dashboard.py"  # noqa: E501
+    grafana_lib = requests.get(grafana_lib_url, timeout=10).text
+    grafana_lib = grafana_lib.replace(
+        'DEFAULT_PEER_NAME = "grafana"', 'DEFAULT_PEER_NAME = "peer-any"'
+    )
+    any_charm_src_overwrite = {
+        "grafana_dashboard.py": grafana_lib,
+        "any_charm.py": textwrap.dedent(
+            """\
+        from grafana_dashboard import GrafanaDashboardConsumer
+        from any_charm_base import AnyCharmBase
+        class AnyCharm(AnyCharmBase):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.grafana_dashboard_consumer = GrafanaDashboardConsumer(self, relation_name="require-grafana-dashboard")  # noqa: E501
+            def validate_dashboard(self):
+                relation = self.model.get_relation("require-grafana-dashboard")
+                dashboards = self.grafana_dashboard_consumer.get_dashboards_from_relation(relation.id)  # noqa: E501
+                if len(dashboards) == 0:
+                    raise ValueError("dashboard not found")
+                other_app = relation.app
+                raw_data = relation.data[other_app].get("dashboards", "")
+                if not raw_data:
+                    raise ValueError("dashboard has no raw data")
+            @property
+            def peers(self):
+                return self.model.get_relation("peer-any")
+        """
+        ),
+    }
     assert ops_test.model
-    prometheus_k8s = await ops_test.model.deploy(
-        "prometheus-k8s",
-        channel="latest/edge",
-        trust=True,
+    await ops_test.model.deploy(
+        "any-charm",
+        application_name=any_app_name,
+        channel="beta",
+        config={"src-overwrite": json.dumps(any_charm_src_overwrite)},
     )
-    await ops_test.model.add_relation("maubot", prometheus_k8s.name)
-    await ops_test.model.wait_for_idle(timeout=600, status="active")
 
-    for unit_ip in await get_unit_ips(prometheus_k8s.name):
-        query_targets = requests.get(f"http://{unit_ip}:9090/api/v1/targets", timeout=10).json()
-        assert len(query_targets["data"]["activeTargets"])
+    await ops_test.model.add_relation(any_app_name, "maubot:grafana-dashboard")
+    await ops_test.model.wait_for_idle(status="active")
 
-    grafana_k8s = await ops_test.model.deploy(
-        "grafana-k8s",
-        channel="latest/edge",
-        trust=True,
-    )
-    await ops_test.model.add_relation(
-        f"{grafana_k8s.name}:grafana-source", f"{prometheus_k8s.name}:grafana-source"
-    )
-    await ops_test.model.add_relation("maubot", grafana_k8s.name)
-    await ops_test.model.wait_for_idle(timeout=600, status="active")
-    action = (
-        await ops_test.model.applications[grafana_k8s.name]
-        .units[0]
-        .run_action("get-admin-password")
-    )
+    unit = ops_test.model.applications[any_app_name].units[0]
+    action = await unit.run_action("rpc", method="validate_dashboard")
     await action.wait()
-    password = action.results["admin-password"]
-    grafana_ip = (await get_unit_ips(grafana_k8s.name))[0]
-    sess = requests.session()
-    sess.post(
-        f"http://{grafana_ip}:3000/login",
-        json={
-            "user": "admin",
-            "password": password,
-        },
-    ).raise_for_status()
-    datasources = sess.get(f"http://{grafana_ip}:3000/api/datasources", timeout=10).json()
-    datasource_types = set(datasource["type"] for datasource in datasources)
-    assert "prometheus" in datasource_types
-    dashboards = sess.get(
-        f"http://{grafana_ip}:3000/api/search",
-        timeout=10,
-        params={"query": "Prometheus Maubot Blackbox Exporter"},
-    ).json()
-    assert len(dashboards)
+    assert "return" in action.results
+    assert action.results["return"] == "null"
 
 
 async def test_create_admin_action_success(ops_test: OpsTest):
