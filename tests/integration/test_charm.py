@@ -126,6 +126,31 @@ async def test_cos_integration(ops_test: OpsTest):
     assert "return" in action.results
     assert action.results["return"] == "null"
 
+def log_files_exist(
+    unit_address: str, application_name: str, filenames: typing.Iterable[str]
+) -> bool:
+    """Returns whether log filenames exist in Loki logs query.
+
+    Args:
+        unit_address: Loki unit ip address.
+        application_name: Application name to query logs for.
+        filenames: Expected filenames to be present in logs collected by Loki.
+
+    Returns:
+        True if log files with logs exists. False otherwise.
+    """
+    series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
+    log_files = set(series_data["filename"] for series_data in series["data"])
+    logger.info("Loki log files: %s", log_files)
+    if not all(filename in log_files for filename in filenames):
+        return False
+    log_query = requests.get(
+        f"http://{unit_address}:3100/loki/api/v1/query",
+        timeout=10,
+        params={"query": f'{{juju_application="{application_name}"}}'},
+    ).json()
+
+    return len(log_query["data"]["result"]) != 0
 
 async def test_create_admin_action_success(ops_test: OpsTest):
     """
