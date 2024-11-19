@@ -12,6 +12,7 @@ import json
 import logging
 import secrets
 import textwrap
+import typing
 
 import pytest
 import requests
@@ -126,6 +127,7 @@ async def test_cos_integration(ops_test: OpsTest):
     assert "return" in action.results
     assert action.results["return"] == "null"
 
+
 def log_files_exist(
     unit_address: str, application_name: str, filenames: typing.Iterable[str]
 ) -> bool:
@@ -151,6 +153,7 @@ def log_files_exist(
     ).json()
 
     return len(log_query["data"]["result"]) != 0
+
 
 async def test_create_admin_action_success(ops_test: OpsTest):
     """
