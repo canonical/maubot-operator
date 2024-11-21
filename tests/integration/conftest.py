@@ -6,7 +6,10 @@
 import json
 from typing import Any, Callable, Coroutine
 
+import pytest
 import pytest_asyncio
+import kubernetes.config
+import kubernetes.stream
 from pytest_operator.plugin import OpsTest
 
 
@@ -34,3 +37,9 @@ async def fixture_get_unit_ips(
         )
 
     return get_unit_ips
+
+@pytest.fixture(scope="module", name="kube_core_client")
+def kube_core_client_fixture(kube_config: str) -> kubernetes.client.CoreV1Api:
+    """Create a kubernetes client for core v1 API."""
+    kubernetes.config.load_kube_config(config_file=kube_config)
+    return kubernetes.client.CoreV1Api()
