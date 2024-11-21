@@ -18,7 +18,6 @@ import pytest
 import requests
 from pytest_operator.plugin import OpsTest
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -159,7 +158,7 @@ async def test_loki_integration(
         timeout=10,
         params={"query": f'{{juju_application="maubot"}}'},
     ).json()
-    print(f"Log query: {log_query["data"]["result"]}")
+    print(f"Log query: {log_query}")
     assert len(log_query["data"]["result"])
 
 async def test_create_admin_action_success(ops_test: OpsTest):

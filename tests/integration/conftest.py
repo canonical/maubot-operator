@@ -6,7 +6,6 @@
 import json
 from typing import Any, Callable, Coroutine
 
-
 import pytest_asyncio
 from pytest_operator.plugin import OpsTest
 
