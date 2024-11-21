@@ -6,10 +6,8 @@
 import json
 from typing import Any, Callable, Coroutine
 
-import pytest
+
 import pytest_asyncio
-import kubernetes.config
-import kubernetes.stream
 from pytest_operator.plugin import OpsTest
 
 
@@ -37,4 +35,3 @@ async def fixture_get_unit_ips(
         )
 
     return get_unit_ips
-

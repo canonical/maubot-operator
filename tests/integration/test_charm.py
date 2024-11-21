@@ -12,15 +12,12 @@ import json
 import logging
 import secrets
 import textwrap
-from typing import Any, Callable
+from typing import Callable
 
 import pytest
 import requests
 from pytest_operator.plugin import OpsTest
-from kubernetes.client import CoreV1Api
 
-import functools
-from .helpers import wait_for
 
 logger = logging.getLogger(__name__)
 
