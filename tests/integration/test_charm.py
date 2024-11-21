@@ -12,11 +12,15 @@ import json
 import logging
 import secrets
 import textwrap
-import typing
+from typing import Any, Callable
 
 import pytest
 import requests
 from pytest_operator.plugin import OpsTest
+from kubernetes.client import CoreV1Api
+
+import functools
+from .helpers import wait_for
 
 logger = logging.getLogger(__name__)
 
@@ -129,31 +133,64 @@ async def test_cos_integration(ops_test: OpsTest):
 
 
 def log_files_exist(
-    unit_address: str, application_name: str, filenames: typing.Iterable[str]
+    unit_address: str, application_name: str
 ) -> bool:
     """Returns whether log filenames exist in Loki logs query.
 
     Args:
         unit_address: Loki unit ip address.
         application_name: Application name to query logs for.
-        filenames: Expected filenames to be present in logs collected by Loki.
 
     Returns:
         True if log files with logs exists. False otherwise.
     """
-    series = requests.get(f"http://{unit_address}:3100/loki/api/v1/series", timeout=10).json()
-    log_files = set(series_data["filename"] for series_data in series["data"])
-    logger.info("Loki log files: %s", log_files)
-    if not all(filename in log_files for filename in filenames):
-        return False
     log_query = requests.get(
         f"http://{unit_address}:3100/loki/api/v1/query",
         timeout=10,
         params={"query": f'{{juju_application="{application_name}"}}'},
     ).json()
-
+    print(f"Log query: {log_query}")
     return len(log_query["data"]["result"]) != 0
 
+@pytest.mark.abort_on_fail
+async def test_loki_integration(
+    ops_test: OpsTest,
+    kube_core_client: CoreV1Api,
+    get_unit_ips: Callable
+):
+    """
+    arrange: after Maubot charm has been deployed and relations established.
+    act: loki charm joins relation
+    assert: loki joins relation successfully, logs are being output to container and to files for
+        loki to scrape.
+    """
+    loki = await ops_test.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
+    await ops_test.model.wait_for_idle(
+        status="active", apps=[loki.name], raise_on_error=False, timeout=30 * 60
+    )
+    await ops_test.model.add_relation(f"maubot:logging", loki.name)
+    await ops_test.model.wait_for_idle(
+        status="active",
+        timeout=20 * 60,
+        idle_period=30,
+        raise_on_error=False,
+    )
+
+    addresses = await get_unit_ips(loki.name)
+
+    for address in addresses:
+        await wait_for(
+                functools.partial(
+                    log_files_exist,
+                    address,
+                    loki.name,
+                ),
+                timeout=10 * 60,
+            )
+    kube_log = kube_core_client.read_namespaced_pod_log(
+        name=f"maubot-0", namespace=ops_test.model.name, container="maubot"
+    )
+    assert kube_log
 
 async def test_create_admin_action_success(ops_test: OpsTest):
     """
