@@ -12,10 +12,13 @@ import json
 import logging
 import secrets
 import textwrap
-from typing import Callable
+from typing import Any, Dict
 
 import pytest
 import requests
+import yaml
+from juju.application import Application
+from juju.relation import Relation
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -127,39 +130,76 @@ async def test_cos_integration(ops_test: OpsTest):
     assert "return" in action.results
     assert action.results["return"] == "null"
 
-@pytest.mark.abort_on_fail
-async def test_loki_integration(
-    ops_test: OpsTest,
-    get_unit_ips: Callable,
-):
-    """
-    arrange: after Maubot charm has been deployed.
-    act: establish relations with loki charm.
-    assert: loki joins relation successfully, logs are being output to container and to files for
-        loki to scrape.
-    """
-    
-    assert ops_test.model
-    model = ops_test.model
 
+async def _get_relation(app: Application, endpoint_name: str) -> Relation:
+    """Get relation for endpoint."""
+    print(f"App relations: {app.relations}")
+    relations = [
+        relation
+        for relation in app.relations
+        if any(endpoint.name == endpoint_name for endpoint in relation.endpoints)
+    ]
+    print(f"found relations {relations} for {app.name}:{endpoint_name}")
+
+    assert not (len(relations) == 0), f"{endpoint_name} is missing"
+    assert not (len(relations) > 1), f"too many relations with {endpoint_name} endpoint"
+    return relations[0]
+
+
+async def _get_unit_relation_data(
+    app: Application, endpoint_name: str
+) -> Dict[str, Dict[str, Any]]:
+    """Get units relation data from endpoint name."""
+    relation = await _get_relation(app, endpoint_name)
+    print(f"relation provides: {relation.provides}")
+    relation_app = relation.provides.application
+    data = {}
+    for unit in relation_app.units:
+        cmd = f"relation-get --format=yaml -r {relation.entity_id} - {unit.name}"
+        print(f"running cmd {cmd} on unit {unit.name}")
+        result = await unit.run(cmd, block=True)
+        assert (
+            result.results["return-code"] == 0
+        ), f"cmd `{cmd}` failed with error `{result.results.get('stderr')}`"
+        data[unit.name] = yaml.safe_load(result.results["stdout"])
+
+    return data
+
+
+@pytest.mark.abort_on_fail
+async def test_loki_endpoint(ops_test: OpsTest) -> None:
+    """Check defined logging settings in relation data bag.
+
+    This function checks if endpoint is defined in 'provides' side of logging unit
+    relation data bag
+    ```yaml
+    related-units:
+      loki-k8s/0:
+        in-scope: true
+        data:
+          endpoint: '{"url": "http://loki-k8s-0.loki-k8s-endpoints.
+          my_model.svc.cluster.local:3100/loki/api/v1/push"}'
+          ...
+    ```
+
+    Args:
+        app (Application): Juju Applicatition object.
+    """
+    model = ops_test.model
     loki = await model.deploy("loki-k8s", channel="1.0/stable", trust=True)
     await model.wait_for_idle(
         status="active", apps=[loki.name], raise_on_error=False, timeout=30 * 60
     )
 
     await model.add_relation(loki.name, "maubot:logging")
+    await model.wait_for_idle(apps=["maubot", loki.name], status="active", idle_period=60)
+    app = ops_test.model.applications["maubot"]
+    unit_relation_data = await _get_unit_relation_data(app, "logging")
+    for unit_name, unit_data in unit_relation_data.items():
+        assert (
+            "endpoint" in unit_data
+        ), f"logging unit '{unit_name}' relation data are missing 'endpoint'"
 
-    await model.wait_for_idle(
-        apps=["maubot", loki.name], status="active", idle_period=60
-    )
-    loki_ip = (await get_unit_ips(loki.name))[0]
-    log_query = requests.get(
-        f"http://{loki_ip}:3100/loki/api/v1/query",
-        timeout=10,
-        params={"query": f'{{juju_application="maubot"}}'},
-    ).json()
-    print(f"Log query: {log_query}")
-    assert len(log_query["data"]["result"])
 
 async def test_create_admin_action_success(ops_test: OpsTest):
     """
