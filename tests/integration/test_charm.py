@@ -169,21 +169,10 @@ async def _get_unit_relation_data(
 @pytest.mark.abort_on_fail
 async def test_loki_endpoint(ops_test: OpsTest) -> None:
     """Check defined logging settings in relation data bag.
+    arrange: deploy loki-k8s charm.
+    act: integrate Maubot with loki-k8s.
+    assert: Check if logging settings in relation data bag has logging endpoint.
 
-    This function checks if endpoint is defined in 'provides' side of logging unit
-    relation data bag
-    ```yaml
-    related-units:
-      loki-k8s/0:
-        in-scope: true
-        data:
-          endpoint: '{"url": "http://loki-k8s-0.loki-k8s-endpoints.
-          my_model.svc.cluster.local:3100/loki/api/v1/push"}'
-          ...
-    ```
-
-    Args:
-        app (Application): Juju Applicatition object.
     """
     model = ops_test.model
     loki = await model.deploy("loki-k8s", channel="1.0/stable", trust=True)
