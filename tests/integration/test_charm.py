@@ -174,6 +174,7 @@ async def test_loki_endpoint(ops_test: OpsTest) -> None:
     assert: Check if logging settings in relation data bag has logging endpoint.
 
     """
+    assert ops_test.model
     loki = await ops_test.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
     await ops_test.model.wait_for_idle(
         status="active", apps=[loki.name], raise_on_error=False, timeout=30 * 60
