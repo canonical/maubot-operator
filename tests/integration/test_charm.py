@@ -174,14 +174,13 @@ async def test_loki_endpoint(ops_test: OpsTest) -> None:
     assert: Check if logging settings in relation data bag has logging endpoint.
 
     """
-    model = ops_test.model
-    loki = await model.deploy("loki-k8s", channel="1.0/stable", trust=True)
-    await model.wait_for_idle(
+    loki = await ops_test.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
+    await ops_test.model.wait_for_idle(
         status="active", apps=[loki.name], raise_on_error=False, timeout=30 * 60
     )
 
-    await model.add_relation(loki.name, "maubot:logging")
-    await model.wait_for_idle(apps=["maubot", loki.name], status="active", idle_period=60)
+    await ops_test.model.add_relation(loki.name, "maubot:logging")
+    await ops_test.model.wait_for_idle(apps=["maubot", loki.name], status="active", idle_period=60)
     app = ops_test.model.applications["maubot"]
     unit_relation_data = await _get_unit_relation_data(app, "logging")
     for unit_name, unit_data in unit_relation_data.items():
