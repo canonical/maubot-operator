@@ -149,9 +149,9 @@ async def test_loki_endpoint(ops_test: OpsTest):
         class AnyCharm(AnyCharmBase):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.loki_provider = LokiPushApiProvider(self)
+                self.loki_provider = LokiPushApiProvider(self, relation_name="provide-logging")
             async def get_logging_endpoints(self):
-                relation = self.model.get_relation("logging")
+                relation = self.model.get_relation("provide-logging")
                 cmd = f"relation-get --format=yaml -r {relation.entity_id} - {self.unit.name}"
                 print(f"running cmd {cmd} on unit {self.unit.name}")
                 result = await self.unit.run(cmd, block=True)
@@ -170,7 +170,7 @@ async def test_loki_endpoint(ops_test: OpsTest):
         "any-charm",
         application_name=any_app_name,
         channel="beta",
-        config={"src-overwrite": json.dumps(any_charm_src_overwrite)},
+        config={"src-overwrite": json.dumps(any_charm_src_overwrite), "python-packages": "cosl"},
     )
 
     await ops_test.model.add_relation(any_app_name, "maubot:logging")
