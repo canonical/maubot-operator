@@ -131,63 +131,56 @@ async def test_cos_integration(ops_test: OpsTest):
     assert action.results["return"] == "null"
 
 
-async def _get_relation(app: Application, endpoint_name: str) -> Relation:
-    """Get relation for endpoint."""
-    print(f"App relations: {app.relations}")
-    relations = [
-        relation
-        for relation in app.relations
-        if any(endpoint.name == endpoint_name for endpoint in relation.endpoints)
-    ]
-    print(f"found relations {relations} for {app.name}:{endpoint_name}")
-
-    assert not (len(relations) == 0), f"{endpoint_name} is missing"
-    assert not (len(relations) > 1), f"too many relations with {endpoint_name} endpoint"
-    return relations[0]
-
-
-async def _get_unit_relation_data(
-    app: Application, endpoint_name: str
-) -> Dict[str, Dict[str, Any]]:
-    """Get units relation data from endpoint name."""
-    relation = await _get_relation(app, endpoint_name)
-    print(f"relation provides: {relation.provides}")
-    relation_app = relation.provides.application
-    data = {}
-    for unit in relation_app.units:
-        cmd = f"relation-get --format=yaml -r {relation.entity_id} - {unit.name}"
-        print(f"running cmd {cmd} on unit {unit.name}")
-        result = await unit.run(cmd, block=True)
-        assert (
-            result.results["return-code"] == 0
-        ), f"cmd `{cmd}` failed with error `{result.results.get('stderr')}`"
-        data[unit.name] = yaml.safe_load(result.results["stdout"])
-
-    return data
-
-
-@pytest.mark.abort_on_fail
-async def test_loki_endpoint(ops_test: OpsTest) -> None:
-    """Check defined logging settings in relation data bag.
+async def test_loki_endpoint(ops_test: OpsTest):
+    """
     arrange: deploy loki-k8s charm.
     act: integrate Maubot with loki-k8s.
     assert: Check if logging settings in relation data bag has logging endpoint.
-
     """
+    any_app_name = "any-loki"
+    loki_lib_url = "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main/lib/charms/loki_k8s/v1/loki_push_api.py"  # noqa: E501
+    loki_lib = requests.get(loki_lib_url, timeout=10).text
+    any_charm_src_overwrite = {
+        "loki_push_api.py": loki_lib,
+        "any_charm.py": textwrap.dedent(
+            """\
+        from loki_push_api import LokiPushApiProvider
+        from any_charm_base import AnyCharmBase
+        class AnyCharm(AnyCharmBase):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.loki_provider = LokiPushApiProvider(self)
+            async def get_logging_endpoints(self):
+                relation = self.model.get_relation("logging")
+                cmd = f"relation-get --format=yaml -r {relation.entity_id} - {self.unit.name}"
+                print(f"running cmd {cmd} on unit {self.unit.name}")
+                result = await self.unit.run(cmd, block=True)
+                assert (
+                    result.results["return-code"] == 0
+                ), f"cmd `{cmd}` failed with error `{result.results.get('stderr')}`"
+                unit_data = yaml.safe_load(result.results["stdout"])
+                if "endpoint" not in unit_data:
+                    raise ValueError("logging endpoint not configured")
+
+        """
+        ),
+    }
     assert ops_test.model
-    loki = await ops_test.model.deploy("loki-k8s", channel="1.0/stable", trust=True)
-    await ops_test.model.wait_for_idle(
-        status="active", apps=[loki.name], raise_on_error=False, timeout=30 * 60
+    await ops_test.model.deploy(
+        "any-charm",
+        application_name=any_app_name,
+        channel="beta",
+        config={"src-overwrite": json.dumps(any_charm_src_overwrite)},
     )
 
-    await ops_test.model.add_relation(loki.name, "maubot:logging")
-    await ops_test.model.wait_for_idle(apps=["maubot", loki.name], status="active", idle_period=60)
-    app = ops_test.model.applications["maubot"]
-    unit_relation_data = await _get_unit_relation_data(app, "logging")
-    for unit_name, unit_data in unit_relation_data.items():
-        assert (
-            "endpoint" in unit_data
-        ), f"logging unit '{unit_name}' relation data are missing 'endpoint'"
+    await ops_test.model.add_relation(any_app_name, "maubot:logging")
+    await ops_test.model.wait_for_idle(status="active")
+
+    unit = ops_test.model.applications[any_app_name].units[0]
+    action = await unit.run_action("rpc", method="get_logging_endpoints")
+    await action.wait()
+    assert "return" in action.results
+    assert action.results["return"] == "null"
 
 
 async def test_create_admin_action_success(ops_test: OpsTest):
