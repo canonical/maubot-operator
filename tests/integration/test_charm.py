@@ -12,13 +12,9 @@ import json
 import logging
 import secrets
 import textwrap
-from typing import Any, Dict
 
 import pytest
 import requests
-import yaml
-from juju.application import Application
-from juju.relation import Relation
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -131,56 +127,17 @@ async def test_cos_integration(ops_test: OpsTest):
     assert action.results["return"] == "null"
 
 
-async def test_loki_endpoint(ops_test: OpsTest):
+@pytest.mark.abort_on_fail
+async def test_loki_endpoint(loki_relation_data):
     """
-    arrange: deploy loki-k8s charm.
-    act: integrate Maubot with loki-k8s.
-    assert: Check if logging settings in relation data bag has logging endpoint.
+    arrange: after Maubot is deployed and relations established
+    act: any-loki is deployed and joins the relation
+    assert: logging settings in the relation data bag has a logging endpoint.
     """
-    any_app_name = "any-loki"
-    loki_lib_url = "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main/lib/charms/loki_k8s/v1/loki_push_api.py"  # noqa: E501
-    loki_lib = requests.get(loki_lib_url, timeout=10).text
-    any_charm_src_overwrite = {
-        "loki_push_api.py": loki_lib,
-        "any_charm.py": textwrap.dedent(
-            """\
-        from loki_push_api import LokiPushApiProvider
-        from any_charm_base import AnyCharmBase
-        class AnyCharm(AnyCharmBase):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.loki_provider = LokiPushApiProvider(self, relation_name="provide-logging")
-            async def get_logging_endpoints(self):
-                relation = self.model.get_relation("provide-logging")
-                cmd = f"relation-get --format=yaml -r {relation.entity_id} - {self.unit.name}"
-                print(f"running cmd {cmd} on unit {self.unit.name}")
-                result = await self.unit.run(cmd, block=True)
-                assert (
-                    result.results["return-code"] == 0
-                ), f"cmd `{cmd}` failed with error `{result.results.get('stderr')}`"
-                unit_data = yaml.safe_load(result.results["stdout"])
-                if "endpoint" not in unit_data:
-                    raise ValueError("logging endpoint not configured")
 
-        """
-        ),
-    }
-    assert ops_test.model
-    await ops_test.model.deploy(
-        "any-charm",
-        application_name=any_app_name,
-        channel="beta",
-        config={"src-overwrite": json.dumps(any_charm_src_overwrite), "python-packages": "cosl"},
-    )
-
-    await ops_test.model.add_relation(any_app_name, "maubot:logging")
-    await ops_test.model.wait_for_idle(status="active")
-
-    unit = ops_test.model.applications[any_app_name].units[0]
-    action = await unit.run_action("rpc", method="get_logging_endpoints")
-    await action.wait()
-    assert "return" in action.results
-    assert action.results["return"] == "null"
+    # Assert that the Loki endpoint is in the relation data
+    assert "endpoint" in loki_relation_data, "relation data are missing 'endpoint'"
+    assert "url" in loki_relation_data["endpoint"], "Relation data missing 'url'"
 
 
 async def test_create_admin_action_success(ops_test: OpsTest):
