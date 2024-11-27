@@ -134,7 +134,6 @@ async def test_loki_endpoint(loki_relation_data):
     act: any-loki is deployed and joins the relation
     assert: logging settings in the relation data bag has a logging endpoint.
     """
-
     # Assert that the Loki endpoint is in the relation data
     assert "endpoint" in loki_relation_data, "relation data are missing 'endpoint'"
     assert "url" in loki_relation_data["endpoint"], "Relation data missing 'url'"
