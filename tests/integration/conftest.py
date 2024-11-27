@@ -53,7 +53,7 @@ def model_fixture(ops_test: OpsTest) -> Model:
 async def any_loki_fixture(model: Model):
     """Deploy loki using AnyCharm and relating it to maubot"""
     any_app_name = "any-loki"
-    loki_lib_url = "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main/lib/charms/loki_k8s/v1/loki_push_api.py"  # noqa: E501
+    loki_lib_url = "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main/lib/charms/loki_k8s/v1/loki_push_api.py"  # pylint: disable=line-too-long
     loki_lib = requests.get(loki_lib_url, timeout=10).text
     any_charm_src_overwrite = {
         "loki_push_api.py": loki_lib,
