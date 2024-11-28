@@ -5,14 +5,15 @@
 
 import json
 import textwrap
+from pathlib import Path
 from typing import Any, Callable, Coroutine
 
 import pytest
 import pytest_asyncio
 import requests
-import yaml
 from juju.application import Application
 from juju.model import Model
+from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
 
@@ -49,11 +50,59 @@ def model_fixture(ops_test: OpsTest) -> Model:
     return ops_test.model
 
 
-@pytest_asyncio.fixture(scope="function", name="any_loki")
-async def any_loki_fixture(model: Model):
+@pytest_asyncio.fixture(scope="module", name="charm")
+async def charm_fixture(pytestconfig: pytest.Config, ops_test: OpsTest) -> str | Path:
+    """The path to charm."""
+    charms = pytestconfig.getoption("--charm-file")
+    if not charms:
+        charm = await ops_test.build_charm(".")
+        assert charm, "Charm not built"
+        return charm
+    return charms
+
+
+@pytest_asyncio.fixture(scope="module", name="application")
+async def maubot_application_fixture(
+    model: Model,
+    charm: str | Path,
+    pytestconfig: pytest.Config,
+) -> Application:
+    """Deploy the maubot charm."""
+    maubot_image = pytestconfig.getoption("--maubot-image")
+    assert maubot_image
+    maubot = await model.deploy(f"./{charm}", resources={"maubot-image": maubot_image})
+
+    await model.wait_for_idle(timeout=600, status="blocked")
+
+    yield maubot
+
+
+@pytest.fixture(scope="module", name="unit")
+def unit_fixture(application: Application) -> Unit:
+    """The maubot charm application unit."""
+    return application.units[0]
+
+
+@pytest_asyncio.fixture(scope="module", name="postgresql-related")
+async def postgresql_related_fixture(model: Model, application: Application):
+    """Deploy postgresql-k8s charm and relate to maubot"""
+    postgresql_k8s = await model.deploy("postgresql-k8s", channel="14/stable", trust=True)
+    await model.wait_for_idle(timeout=900)
+
+    await model.add_relation(application.name, postgresql_k8s.name)
+    await model.wait_for_idle(timeout=900, status="active")
+
+    return postgresql_k8s
+
+
+@pytest_asyncio.fixture(scope="module", name="any_loki")
+async def any_loki_fixture(model: Model) -> Application:
     """Deploy loki using AnyCharm and relating it to maubot"""
     any_app_name = "any-loki"
-    loki_lib_url = "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main/lib/charms/loki_k8s/v1/loki_push_api.py"  # noqa: E501  # pylint: disable=line-too-long
+    loki_lib_url = (
+        "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main"
+        "/lib/charms/loki_k8s/v1/loki_push_api.py"
+    )
     loki_lib = requests.get(loki_lib_url, timeout=10).text
     any_charm_src_overwrite = {
         "loki_push_api.py": loki_lib,
@@ -82,19 +131,3 @@ async def any_loki_fixture(model: Model):
     await model.wait_for_idle(status="active")
 
     return loki_any
-
-
-@pytest_asyncio.fixture(scope="function", name="loki_relation_data")
-async def loki_relation_data_fixture(any_loki: Application):
-    """Return relation data from any-loki unit"""
-    loki_unit = any_loki.units[0]
-    action = await loki_unit.run_action("rpc", method="get_relation_id")
-    results = await action.wait()
-    relation_id = results.results["return"]
-    relation_get_cmd = f"relation-get --format=yaml -r {relation_id} - {loki_unit.name}"
-    result = await loki_unit.run(relation_get_cmd, block=True)
-    assert (
-        result.results["return-code"] == 0
-    ), f"cmd `{relation_get_cmd}` failed with error `{result.results.get('stderr')}`"
-    relation_data = yaml.safe_load(result.results["stdout"])
-    return relation_data

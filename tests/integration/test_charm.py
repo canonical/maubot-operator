@@ -15,6 +15,9 @@ import textwrap
 
 import pytest
 import requests
+from juju.application import Application
+from juju.model import Model
+from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -22,45 +25,36 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(
-    ops_test: OpsTest,
-    pytestconfig: pytest.Config,
+    model: Model,
+    application: Application,
 ):
     """
-    arrange: set up the test Juju model.
-    act: build and deploy the Maubot charm, check if is blocked and deploy postgresql.
+    arrange: deploy Maubot and postgresql and integrate them.
+    act: send a request to get manifest.json.
     assert: the Maubot charm becomes active once is integrated with postgresql.
         Charm is still active after integrating it with Nginx and the request
         is successful.
     """
-    charm = pytestconfig.getoption("--charm-file")
-    maubot_image = pytestconfig.getoption("--maubot-image")
-    assert maubot_image
-    if not charm:
-        charm = await ops_test.build_charm(".")
-    assert ops_test.model
-    maubot = await ops_test.model.deploy(f"./{charm}", resources={"maubot-image": maubot_image})
 
-    await ops_test.model.wait_for_idle(timeout=600, status="blocked")
+    postgresql_k8s = await model.deploy("postgresql-k8s", channel="14/stable", trust=True)
+    await model.wait_for_idle(timeout=900)
+    await model.add_relation(application.name, postgresql_k8s.name)
+    await model.wait_for_idle(timeout=900, status="active")
 
-    postgresql_k8s = await ops_test.model.deploy("postgresql-k8s", channel="14/stable", trust=True)
-    await ops_test.model.wait_for_idle(timeout=900)
-    await ops_test.model.add_relation(maubot.name, postgresql_k8s.name)
-    await ops_test.model.wait_for_idle(timeout=900, status="active")
-
-    nginx_ingress_integrator = await ops_test.model.deploy(
+    nginx_ingress_integrator = await model.deploy(
         "nginx-ingress-integrator",
         channel="edge",
         config={
             "path-routes": "/",
             "service-hostname": "maubot.local",
-            "service-namespace": ops_test.model.name,
+            "service-namespace": model.name,
             "service-name": "maubot",
         },
         trust=True,
     )
-    await ops_test.model.add_relation(maubot.name, nginx_ingress_integrator.name)
+    await model.add_relation(application.name, nginx_ingress_integrator.name)
 
-    await ops_test.model.wait_for_idle(timeout=600, status="active")
+    await model.wait_for_idle(timeout=600, status="active")
 
     response = requests.get(
         "http://127.0.0.1/_matrix/maubot/manifest.json",
@@ -72,7 +66,7 @@ async def test_build_and_deploy(
 
 
 @pytest.mark.abort_on_fail
-async def test_cos_integration(ops_test: OpsTest):
+async def test_cos_integration(model: Model):
     """
     arrange: deploy Anycharm.
     act: integrate Maubot with Anycharm.
@@ -109,18 +103,17 @@ async def test_cos_integration(ops_test: OpsTest):
         """
         ),
     }
-    assert ops_test.model
-    await ops_test.model.deploy(
+    await model.deploy(
         "any-charm",
         application_name=any_app_name,
         channel="beta",
         config={"src-overwrite": json.dumps(any_charm_src_overwrite)},
     )
 
-    await ops_test.model.add_relation(any_app_name, "maubot:grafana-dashboard")
-    await ops_test.model.wait_for_idle(status="active")
+    await model.add_relation(any_app_name, "maubot:grafana-dashboard")
+    await model.wait_for_idle(status="active")
 
-    unit = ops_test.model.applications[any_app_name].units[0]
+    unit = model.applications[any_app_name].units[0]
     action = await unit.run_action("rpc", method="validate_dashboard")
     await action.wait()
     assert "return" in action.results
@@ -128,26 +121,26 @@ async def test_cos_integration(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-async def test_loki_endpoint(loki_relation_data):
+async def test_loki_endpoint(ops_test: OpsTest, any_loki: Application):
     """
     arrange: after Maubot is deployed and relations established
     act: any-loki is deployed and joins the relation
-    assert: logging settings in the relation data bag has a logging endpoint.
+    assert: pebble plan inside maubot has logging endpoint configured.
     """
-    # Assert that the Loki endpoint is in the relation data
-    assert "endpoint" in loki_relation_data, "relation data are missing 'endpoint'"
-    assert "url" in loki_relation_data["endpoint"], "Relation data missing 'url'"
+    exit_code, stdout, stderr = await ops_test.juju(
+        "ssh", "--container", "maubot", "maubot/0", "pebble", "plan"
+    )
+    assert exit_code == 0, f"Command failed with exit code {exit_code} and stderr: {stderr}"
+    assert "loki" in stdout, f"'loki' not found in pebble plan:\n{stdout}"
 
 
-async def test_create_admin_action_success(ops_test: OpsTest):
+async def test_create_admin_action_success(unit: Unit):
     """
     arrange: Maubot charm integrated with PostgreSQL.
     act: run the create-admin action.
     assert: the action results contains a password.
     """
     name = "test"
-    assert ops_test.model
-    unit = ops_test.model.applications["maubot"].units[0]
 
     action = await unit.run_action("create-admin", name=name)
     await action.wait()
@@ -171,15 +164,12 @@ async def test_create_admin_action_success(ops_test: OpsTest):
         pytest.param("test", "test already exists", id="user_exists"),
     ],
 )
-async def test_create_admin_action_failed(name: str, expected_message: str, ops_test: OpsTest):
+async def test_create_admin_action_failed(name: str, expected_message: str, unit: Unit):
     """
     arrange: Maubot charm integrated with PostgreSQL.
     act: run the create-admin action.
     assert: the action results fails.
     """
-    assert ops_test.model
-    unit = ops_test.model.applications["maubot"].units[0]
-
     action = await unit.run_action("create-admin", name=name)
     await action.wait()
 
@@ -190,7 +180,8 @@ async def test_create_admin_action_failed(name: str, expected_message: str, ops_
 
 @pytest.mark.abort_on_fail
 async def test_public_url_config(
-    ops_test: OpsTest,
+    model: Model,
+    application: Application,
 ):
     """
     arrange: Maubot is active and paths.json contains default value.
@@ -208,10 +199,8 @@ async def test_public_url_config(
     assert "api_path" in data
     assert data["api_path"] == "/_matrix/maubot/v1"
 
-    assert ops_test.model
-    application = ops_test.model.applications["maubot"]
     await application.set_config({"public-url": "http://foo.com/internal/"})
-    await ops_test.model.wait_for_idle(timeout=600, status="active")
+    await model.wait_for_idle(timeout=600, status="active")
 
     response = requests.get(
         "http://127.0.0.1/_matrix/maubot/paths.json",
@@ -224,7 +213,7 @@ async def test_public_url_config(
     assert data["api_path"] == "/internal/_matrix/maubot/v1"
 
 
-async def test_register_client_account_action_success(ops_test: OpsTest):
+async def test_register_client_account_action_success(unit: Unit, model: Model):
     """
     arrange: Maubot charm integrated with PostgreSQL and AnyCharm(matrix-auth)
         and admin user is created.
@@ -233,8 +222,6 @@ async def test_register_client_account_action_success(ops_test: OpsTest):
     """
     # create user
     name = secrets.token_urlsafe(5)
-    assert ops_test.model
-    unit = ops_test.model.applications["maubot"].units[0]
     action = await unit.run_action("create-admin", name=name)
     await action.wait()
     assert "password" in action.results
@@ -251,7 +238,7 @@ async def test_register_client_account_action_success(ops_test: OpsTest):
     # setting public_baseurl to an URL that Maubot can access
     # in production environment, this is the external URL accessed by clients
     matrix_server_name = "test1"
-    await ops_test.model.deploy(
+    await model.deploy(
         "synapse",
         application_name="synapse",
         channel="latest/edge",
@@ -260,9 +247,9 @@ async def test_register_client_account_action_success(ops_test: OpsTest):
             "public_baseurl": "http://synapse-0.synapse-endpoints.testing.svc.cluster.local:8080/",
         },
     )
-    await ops_test.model.wait_for_idle(status="active")
-    await ops_test.model.add_relation("synapse:matrix-auth", "maubot:matrix-auth")
-    await ops_test.model.wait_for_idle(status="active")
+    await model.wait_for_idle(status="active")
+    await model.add_relation("synapse:matrix-auth", "maubot:matrix-auth")
+    await model.wait_for_idle(status="active")
 
     # run the action
     account_name = secrets.token_urlsafe(5).lower()
