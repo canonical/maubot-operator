@@ -83,18 +83,6 @@ def unit_fixture(application: Application) -> Unit:
     return application.units[0]
 
 
-@pytest_asyncio.fixture(scope="module", name="postgresql-related")
-async def postgresql_related_fixture(model: Model, application: Application):
-    """Deploy postgresql-k8s charm and relate to maubot"""
-    postgresql_k8s = await model.deploy("postgresql-k8s", channel="14/stable", trust=True)
-    await model.wait_for_idle(timeout=900)
-
-    await model.add_relation(application.name, postgresql_k8s.name)
-    await model.wait_for_idle(timeout=900, status="active")
-
-    return postgresql_k8s
-
-
 @pytest_asyncio.fixture(scope="module", name="any_loki")
 async def any_loki_fixture(model: Model) -> Application:
     """Deploy loki using AnyCharm and relating it to maubot"""
