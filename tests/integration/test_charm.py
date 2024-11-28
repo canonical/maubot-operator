@@ -35,7 +35,6 @@ async def test_build_and_deploy(
         Charm is still active after integrating it with Nginx and the request
         is successful.
     """
-
     postgresql_k8s = await model.deploy("postgresql-k8s", channel="14/stable", trust=True)
     await model.wait_for_idle(timeout=900)
     await model.add_relation(application.name, postgresql_k8s.name)
