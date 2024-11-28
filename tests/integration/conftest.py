@@ -6,7 +6,7 @@
 import json
 import textwrap
 from pathlib import Path
-from typing import Any, Callable, Coroutine
+from typing import Any, AsyncGenerator, Callable, Coroutine
 
 import pytest
 import pytest_asyncio
@@ -66,7 +66,7 @@ async def maubot_application_fixture(
     model: Model,
     charm: str | Path,
     pytestconfig: pytest.Config,
-) -> Application:
+) -> AsyncGenerator[Application, None]:
     """Deploy the maubot charm."""
     maubot_image = pytestconfig.getoption("--maubot-image")
     assert maubot_image
