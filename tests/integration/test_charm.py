@@ -30,11 +30,12 @@ async def test_build_and_deploy(
 ):
     """
     arrange: deploy Maubot and postgresql and integrate them.
-    act: send a request to get manifest.json.
+    act: send a request to retrieve metadata about maubot.
     assert: the Maubot charm becomes active once is integrated with postgresql.
         Charm is still active after integrating it with Nginx and the request
         is successful.
     """
+
     postgresql_k8s = await model.deploy("postgresql-k8s", channel="14/stable", trust=True)
     await model.wait_for_idle(timeout=900)
     await model.add_relation(application.name, postgresql_k8s.name)
@@ -120,11 +121,13 @@ async def test_cos_integration(model: Model):
 
 
 @pytest.mark.abort_on_fail
-async def test_loki_endpoint(ops_test: OpsTest, any_loki: Application):
+async def test_loki_endpoint(
+    ops_test: OpsTest, any_loki: Application  # pylint: disable=unused-argument
+):
     """
     arrange: after Maubot is deployed and relations established
     act: any-loki is deployed and joins the relation
-    assert: pebble plan inside maubot has logging endpoint configured.
+    assert: pebble plan inside maubot has logging endpoint.
     """
     exit_code, stdout, stderr = await ops_test.juju(
         "ssh", "--container", "maubot", "maubot/0", "pebble", "plan"
