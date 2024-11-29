@@ -120,14 +120,43 @@ async def test_cos_integration(model: Model):
 
 
 @pytest.mark.abort_on_fail
-async def test_loki_endpoint(
-    ops_test: OpsTest, any_loki: Application  # pylint: disable=unused-argument
-):
+async def test_loki_endpoint(ops_test: OpsTest, model: Model):  # pylint: disable=unused-argument
     """
     arrange: after Maubot is deployed and relations established
     act: any-loki is deployed and joins the relation
     assert: pebble plan inside maubot has logging endpoint.
     """
+    any_app_name = "any-loki"
+    loki_lib_url = (
+        "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main"
+        "/lib/charms/loki_k8s/v1/loki_push_api.py"
+    )
+    loki_lib = requests.get(loki_lib_url, timeout=10).text
+    any_charm_src_overwrite = {
+        "loki_push_api.py": loki_lib,
+        "any_charm.py": textwrap.dedent(
+            """\
+        from loki_push_api import LokiPushApiProvider
+        from any_charm_base import AnyCharmBase
+        class AnyCharm(AnyCharmBase):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.loki_provider = LokiPushApiProvider(self, relation_name="provide-logging")
+            def get_relation_id(self):
+                relation = self.model.get_relation("provide-logging")
+                return relation.id
+        """
+        ),
+    }
+    await model.deploy(
+        "any-charm",
+        application_name=any_app_name,
+        channel="beta",
+        config={"src-overwrite": json.dumps(any_charm_src_overwrite), "python-packages": "cosl"},
+    )
+
+    await model.add_relation(any_app_name, "maubot:logging")
+    await model.wait_for_idle(status="active")
     exit_code, stdout, stderr = await ops_test.juju(
         "ssh", "--container", "maubot", "maubot/0", "pebble", "plan"
     )

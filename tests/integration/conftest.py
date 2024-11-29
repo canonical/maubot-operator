@@ -4,13 +4,11 @@
 """Fixtures for maubot integration tests."""
 
 import json
-import textwrap
 from pathlib import Path
 from typing import Any, AsyncGenerator, Callable, Coroutine
 
 import pytest
 import pytest_asyncio
-import requests
 from juju.application import Application
 from juju.model import Model
 from juju.unit import Unit
@@ -53,12 +51,12 @@ def model_fixture(ops_test: OpsTest) -> Model:
 @pytest_asyncio.fixture(scope="module", name="charm")
 async def charm_fixture(pytestconfig: pytest.Config, ops_test: OpsTest) -> str | Path:
     """The path to charm."""
-    charms = pytestconfig.getoption("--charm-file")
-    if not charms:
+    charm = pytestconfig.getoption("--charm-file")
+    if not charm:
         charm = await ops_test.build_charm(".")
         assert charm, "Charm not built"
         return charm
-    return charms
+    return charm
 
 
 @pytest_asyncio.fixture(scope="module", name="application")
@@ -81,41 +79,3 @@ async def maubot_application_fixture(
 def unit_fixture(application: Application) -> Unit:
     """The maubot charm application unit."""
     return application.units[0]
-
-
-@pytest_asyncio.fixture(scope="module", name="any_loki")
-async def any_loki_fixture(model: Model) -> Application:
-    """Deploy loki using AnyCharm and relating it to maubot"""
-    any_app_name = "any-loki"
-    loki_lib_url = (
-        "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main"
-        "/lib/charms/loki_k8s/v1/loki_push_api.py"
-    )
-    loki_lib = requests.get(loki_lib_url, timeout=10).text
-    any_charm_src_overwrite = {
-        "loki_push_api.py": loki_lib,
-        "any_charm.py": textwrap.dedent(
-            """\
-        from loki_push_api import LokiPushApiProvider
-        from any_charm_base import AnyCharmBase
-        class AnyCharm(AnyCharmBase):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.loki_provider = LokiPushApiProvider(self, relation_name="provide-logging")
-            def get_relation_id(self):
-                relation = self.model.get_relation("provide-logging")
-                return relation.id
-        """
-        ),
-    }
-    loki_any = await model.deploy(
-        "any-charm",
-        application_name=any_app_name,
-        channel="beta",
-        config={"src-overwrite": json.dumps(any_charm_src_overwrite), "python-packages": "cosl"},
-    )
-
-    await model.add_relation(any_app_name, "maubot:logging")
-    await model.wait_for_idle(status="active")
-
-    return loki_any
