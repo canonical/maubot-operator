@@ -75,14 +75,7 @@ import logging
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import (
-    Callable,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Callable, Optional, Sequence, Type, TypeVar, Union
 
 from cosl import JujuTopology
 from cosl.loki_logger import LokiHandler  # pyright:ignore[reportMissingImports]
