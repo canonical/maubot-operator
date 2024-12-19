@@ -74,7 +74,7 @@ def test_config_changed_with_postgresql(base_state: dict):
     """
     endpoints = "1.2.3.4:5432"
     username = "user"
-    password = "pass" # nosec
+    password = "pass"  # nosec
     database = "maubot"
     postgresql_relation = scenario.Relation(
         endpoint="postgresql",
