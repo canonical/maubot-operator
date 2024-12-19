@@ -46,6 +46,7 @@ MATRIX_AUTH_HOMESERVER = "synapse"
 MAUBOT_CONFIGURATION_PATH = "/data/config.yaml"
 MAUBOT_NAME = "maubot"
 NGINX_NAME = "nginx"
+POSTGRESQL_RELATION_NAME = "postgresql"
 
 
 class MissingRelationDataError(Exception):
@@ -91,7 +92,7 @@ class MaubotCharm(ops.CharmBase):
             jobs=self._probes_scraping_job,
         )
         self.postgresql = DatabaseRequires(
-            self, relation_name="postgresql", database_name=self.app.name
+            self, relation_name=POSTGRESQL_RELATION_NAME, database_name=self.app.name
         )
         self.matrix_auth = MatrixAuthRequires(self)
         self.framework.observe(self.on.maubot_pebble_ready, self._on_maubot_pebble_ready)
@@ -104,6 +105,10 @@ class MaubotCharm(ops.CharmBase):
         # Integrations events handlers
         self.framework.observe(self.postgresql.on.database_created, self._on_database_created)
         self.framework.observe(self.postgresql.on.endpoints_changed, self._on_endpoints_changed)
+        self.framework.observe(
+            self.on[POSTGRESQL_RELATION_NAME].relation_departed,
+            self._on_postgresql_relation_departed,
+        )
         self.framework.observe(self.ingress.on.ready, self._on_ingress_ready)
         self.framework.observe(self.ingress.on.revoked, self._on_ingress_revoked)
         self.framework.observe(
@@ -186,6 +191,10 @@ class MaubotCharm(ops.CharmBase):
 
     def _on_endpoints_changed(self, _: DatabaseEndpointsChangedEvent) -> None:
         """Handle endpoints changed event."""
+        self._reconcile()
+
+    def _on_postgresql_relation_departed(self, _: ops.RelationDepartedEvent) -> None:
+        """Handle postgresql relation departed event."""
         self._reconcile()
 
     def _on_ingress_ready(self, _: IngressPerAppReadyEvent) -> None:
