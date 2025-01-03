@@ -4,7 +4,7 @@
 name: maubot
 summary: Maubot rock
 description: Maubot OCI image for the Maubot charm
-version: 0.5.0
+version: 0.5.1
 license: Apache-2.0
 
 base: ubuntu@24.04
@@ -54,4 +54,4 @@ parts:
     stage-packages:
       - python3-venv
     python-packages:
-      - maubot==0.5.0
+      - maubot==0.5.1
