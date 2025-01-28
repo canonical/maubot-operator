@@ -106,7 +106,7 @@ async def test_cos_integration(model: Model):
         "any-charm",
         application_name=any_app_name,
         channel="beta",
-        config={"src-overwrite": json.dumps(any_charm_src_overwrite)},
+        config={"src-overwrite": json.dumps(any_charm_src_overwrite), "python-packages": "cosl"},
     )
 
     await model.add_relation(any_app_name, "maubot:grafana-dashboard")
