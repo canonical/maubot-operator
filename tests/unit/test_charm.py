@@ -15,7 +15,7 @@ import ops
 import ops.testing
 import pytest
 import requests
-from charms.synapse.v0.matrix_auth import MatrixAuthProviderData
+from charms.synapse.v1.matrix_auth import MatrixAuthProviderData
 
 from charm import MissingRelationDataError
 

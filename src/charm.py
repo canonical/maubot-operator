@@ -29,7 +29,7 @@ from charms.loki_k8s.v1.loki_push_api import (
     charm_logging_config,
 )
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from charms.synapse.v0.matrix_auth import MatrixAuthRequestProcessed, MatrixAuthRequires
+from charms.synapse.v1.matrix_auth import MatrixAuthRequestProcessed, MatrixAuthRequires
 from charms.traefik_k8s.v2.ingress import (
     IngressPerAppReadyEvent,
     IngressPerAppRequirer,
