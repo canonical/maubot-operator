@@ -13,10 +13,8 @@ links:
   source: https://github.com/canonical/maubot-operator
   contact:
     - https://launchpad.net/~canonical-is-devops
-assumes:
-  - juju >= 3.4
-base: ubuntu@24.04
-build-base: ubuntu@24.04
+base: ubuntu@22.04
+build-base: ubuntu@22.04
 config:
   options:
     public-url:
