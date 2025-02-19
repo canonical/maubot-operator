@@ -100,6 +100,9 @@ class MaubotCharm(ops.CharmBase):
         # Actions events handlers
         self.framework.observe(self.on.create_admin_action, self._on_create_admin_action)
         self.framework.observe(
+            self.on.reset_admin_password_action, self._on_reset_admin_password_action
+        )
+        self.framework.observe(
             self.on.register_client_account_action, self._on_register_client_account_action
         )
         # Integrations events handlers
@@ -207,7 +210,7 @@ class MaubotCharm(ops.CharmBase):
 
     # Actions events handlers
     def _on_create_admin_action(self, event: ops.ActionEvent) -> None:
-        """Handle delete-profile action.
+        """Handle create-admin action.
 
         Args:
             event: Action event.
@@ -226,6 +229,36 @@ class MaubotCharm(ops.CharmBase):
             config = self._get_configuration()
             if name in config["admins"]:
                 raise EventFailError(f"{name} already exists")
+            config["admins"][name] = password
+            self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
+            self.container.restart(MAUBOT_NAME)
+            results["password"] = password
+            event.set_results(results)
+        except EventFailError as e:
+            results["error"] = str(e)
+            event.set_results(results)
+            event.fail(str(e))
+
+    def _on_reset_admin_password_action(self, event: ops.ActionEvent) -> None:
+        """Handle reset-admin-password action.
+
+        Args:
+            event: Action event.
+
+        Raises:
+            EventFailError: in case the event fails.
+        """
+        try:
+            name = event.params["name"]
+            results: dict[str, str] = {}
+            if name == "root":
+                raise EventFailError("action disabled, root is reserved.")
+            if self._is_maubot_ready():
+                raise EventFailError("maubot is not ready")
+            password = secrets.token_urlsafe(10)
+            config = self._get_configuration()
+            if name not in config["admins"]:
+                raise EventFailError(f"{name} not found")
             config["admins"][name] = password
             self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
             self.container.restart(MAUBOT_NAME)

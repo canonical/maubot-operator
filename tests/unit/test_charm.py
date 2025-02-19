@@ -132,6 +132,45 @@ def test_create_admin_action_failed(harness):
         assert e.message == message
 
 
+def test_reset_admin_password_action_success(harness):
+    """
+    arrange: initialize the testing harness, set up all required integration
+        and create an admin user.
+    act: run reset-admin-password.
+    assert: ensure password is in the results.
+    """
+    harness.set_leader()
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+    action = harness.run_action("create-admin", {"name": "test"})
+    assert "password" in action.results
+    assert "error" not in action.results
+
+    action = harness.run_action("reset-admin-password", {"name": "test"})
+
+    assert "password" in action.results
+    assert "error" not in action.results
+
+
+def test_reset_admin_password_action_failed(harness):
+    """
+    arrange: initialize the testing harness and set up all required integration.
+    act: run reset-admin-password.
+    assert: ensure action fails.
+    """
+    harness.set_leader()
+    harness.begin_with_initial_hooks()
+    set_postgresql_integration(harness)
+
+    username = "test"
+    try:
+        harness.run_action("reset-admin-password", {"name": username})
+    except ops.testing.ActionFailed as e:
+        message = f"{username} not found"
+        assert e.output.results["error"] == message
+        assert e.message == message
+
+
 def test_public_url_config_changed(harness, monkeypatch):
     """
     arrange: initialize harness and set postgresql integration.
