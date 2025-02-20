@@ -208,6 +208,50 @@ async def test_create_admin_action_failed(name: str, expected_message: str, unit
     assert error == expected_message
 
 
+async def test_reset_admin_password_action_success(unit: Unit):
+    """
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the reset-admin-password action.
+    assert: the action results contains a password.
+    """
+    name = "test"
+
+    action = await unit.run_action("reset-admin-password", name=name)
+    await action.wait()
+
+    assert "password" in action.results
+    password = action.results["password"]
+    response = requests.post(
+        "http://127.0.0.1/_matrix/maubot/v1/auth/login",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+        data=f'{{"username":"{name}","password":"{password}"}}',
+    )
+    assert response.status_code == 200
+    assert "token" in response.text
+
+
+@pytest.mark.parametrize(
+    "name,expected_message",
+    [
+        pytest.param("root", "action disabled, root is reserved.", id="root"),
+        pytest.param("test1", "test1 not found", id="user_not_found"),
+    ],
+)
+async def test_reset_admin_password_action_failed(name: str, expected_message: str, unit: Unit):
+    """
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the reset-admin-password action.
+    assert: the action results fails.
+    """
+    action = await unit.run_action("reset-admin-password", name=name)
+    await action.wait()
+
+    assert "error" in action.results
+    error = action.results["error"]
+    assert error == expected_message
+
+
 @pytest.mark.abort_on_fail
 async def test_public_url_config(
     model: Model,

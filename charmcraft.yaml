@@ -70,6 +70,12 @@ actions:
       name:
         type: string
         description: The name of the administrator user.
+  reset-admin-password:
+    description: Reset password for administrator user.
+    params:
+      name:
+        type: string
+        description: The name of the administrator user.
   register-client-account:
     description: Register Matrix client account for a bot. The result is user ID,
       password, access token and device ID that should be used for registering a
