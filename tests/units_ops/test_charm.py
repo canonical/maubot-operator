@@ -4,55 +4,12 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Unit tests for the Maubot module using Scenario."""
-
-import textwrap
-from pathlib import Path
+"""Unit tests for the Maubot module using testing."""
 
 import ops
-import pytest
-import scenario
-from scenario.context import _Event  # needed for custom events for now
+from ops import testing
 
 from charm import MaubotCharm
-
-
-@pytest.fixture(scope="function", name="base_state")
-def base_state_fixture(tmp_path: Path):
-    """State with container and config file set."""
-    config_file_path = tmp_path / "config.yaml"
-    config_file_path.write_text(
-        textwrap.dedent(
-            """
-        databases: null
-        server:
-            public_url: maubot.local
-        """
-        ),
-        encoding="utf-8",
-    )
-    yield {
-        "leader": True,
-        "containers": {
-            scenario.Container(
-                name="maubot",
-                can_connect=True,
-                execs={
-                    scenario.Exec(
-                        command_prefix=["cp"],
-                        return_code=0,
-                    ),
-                    scenario.Exec(
-                        command_prefix=["mkdir"],
-                        return_code=0,
-                    ),
-                },
-                mounts={
-                    "data": scenario.Mount(location="/data/config.yaml", source=config_file_path)
-                },
-            )
-        },
-    }
 
 
 def test_config_changed_no_postgresql(base_state: dict):
@@ -79,7 +36,7 @@ def test_config_changed_with_postgresql(base_state: dict):
     username = "user"
     password = "pass"  # nosec
     database = "maubot"
-    postgresql_relation = scenario.Relation(
+    postgresql_relation = testing.Relation(
         endpoint="postgresql",
         interface="postgresql_client",
         remote_app_name="postgresql",
@@ -105,10 +62,10 @@ def test_config_changed_with_postgresql(base_state: dict):
 def test_postgresql_relation_departed(base_state: dict):
     """
     arrange: prepare maubot container.
-    act: run config_changed.
+    act: emit postgresql relation departed event.
     assert: status is blocked because there is no postgresql integration.
     """
-    postgresql_relation = scenario.Relation(
+    postgresql_relation = testing.Relation(
         endpoint="postgresql",
         interface="postgresql_client",
         remote_app_name="postgresql",
@@ -118,8 +75,7 @@ def test_postgresql_relation_departed(base_state: dict):
     context = ops.testing.Context(
         charm_type=MaubotCharm,
     )
-    postgresql_relation_departed_event = _Event(
-        "postgresql_relation_departed", relation=postgresql_relation
-    )
-    out = context.run(postgresql_relation_departed_event, state)
+
+    out = context.run(context.on.relation_departed(postgresql_relation), state)
+
     assert out.unit_status == ops.testing.BlockedStatus("postgresql integration is required")
