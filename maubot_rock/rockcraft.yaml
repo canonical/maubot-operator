@@ -55,3 +55,9 @@ parts:
       - python3-venv
     python-packages:
       - maubot==0.5.1
+      # Extracted from:
+      # https://git.buechner.me/nbuechner/matrix-nsfwbot/src/branch/main/requirements.txt
+      - beautifulsoup4==4.13.3
+      - nsfwdetection==1.0.2
+      - nudenet==3.4.2
+
