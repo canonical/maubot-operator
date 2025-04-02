@@ -1,40 +1,106 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Fixtures for maubot unit tests."""
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
 
+"""Fixtures for the Maubot module using testing."""
+
+import textwrap
+from pathlib import Path
+from secrets import token_hex
 
 import pytest
-from ops.testing import Harness
-
-from charm import MaubotCharm
+from ops import testing
 
 
-@pytest.fixture(scope="function", name="harness")
-def harness_fixture():
-    """Enable ops test framework harness."""
-    harness = Harness(MaubotCharm)
-    harness.set_model_name("test")
-    harness.handle_exec(
-        "maubot",
-        ["cp", "--update=none", "/example-config.yaml", "/data/config.yaml"],
-        result=0,
+@pytest.fixture(scope="function", name="base_state")
+def base_state_fixture(tmp_path: Path):
+    """State with container and config file set."""
+    config_file_path = tmp_path / "config.yaml"
+    config_file_path.write_text(
+        textwrap.dedent(
+            """
+        databases: null
+        server:
+            public_url: maubot.local
+        """
+        ),
+        encoding="utf-8",
     )
-    harness.handle_exec(
-        "maubot", ["mkdir", "-p", "/data/plugins", "/data/trash", "/data/dbs"], result=0
+    yield {
+        "leader": True,
+        "containers": {
+            # mypy throws an error because it validates against ops.Container.
+            testing.Container(  # type: ignore[call-arg]
+                name="maubot",
+                can_connect=True,
+                execs={
+                    testing.Exec(
+                        command_prefix=["cp"],
+                        return_code=0,
+                    ),
+                    testing.Exec(
+                        command_prefix=["mkdir"],
+                        return_code=0,
+                    ),
+                },
+                mounts={
+                    "data": testing.Mount(location="/data/config.yaml", source=config_file_path)
+                },
+            )
+        },
+    }
+
+
+@pytest.fixture(name="matrix_auth_secret")
+def matrix_auth_secret_fixture(matrix_auth_secret_id):
+    """Matrix Auth secret fixture."""
+    yield testing.Secret(
+        id=matrix_auth_secret_id, tracked_content={"shared-secret-content": "abc"}
     )
-    root = harness.get_filesystem_root("maubot")
-    (root / "data").mkdir()
-    yaml_content = """\
-database: sqlite:maubot.db
-server:
-    hostname: 0.0.0.0
-    port: 29316
-    public_url: https://example.com
-admins:
-    root: ''
-    admin1: $2b$12$Rr4ZZctE6WATvCl/X7cmRuTJM3pS5hemqhkZWnl25bg1kQtqoQsVW
-"""
-    (root / "data" / "config.yaml").write_text(yaml_content)
-    yield harness
-    harness.cleanup()
+
+
+@pytest.fixture(name="matrix_auth_secret_id")
+def matrix_auth_secret_id_fixture():
+    """Secret ID used by matrix-auth."""
+    yield token_hex(16)
+
+
+@pytest.fixture(name="matrix_auth_relation")
+def matrix_auth_relation_fixture(matrix_auth_secret_id):
+    """Matrix auth relation fixture."""
+    yield testing.Relation(
+        endpoint="matrix-auth",
+        interface="matrix_auth",
+        remote_app_name="synapse",
+        remote_app_data={
+            "homeserver": "https://test.com",
+            "shared_secret_id": matrix_auth_secret_id,
+        },
+    )
+
+
+@pytest.fixture(name="postgresql_relation")
+def postgresql_relation_fixture():
+    """Postgresql relation fixture."""
+    relation_data = {
+        "database": "maubot",
+        "endpoints": "postgresql-k8s-primary.local:5432",
+        "password": token_hex(16),
+        "username": "user1",
+    }
+    yield testing.Relation(
+        endpoint="postgresql",
+        interface="postgresql_client",
+        remote_app_data=relation_data,
+    )
+
+
+@pytest.fixture(name="postgresql_empty_relation")
+def postgresql_empty_relation_fixture():
+    """Postgresql empty relation fixture."""
+    yield testing.Relation(
+        endpoint="postgresql",
+        interface="postgresql_client",
+    )
