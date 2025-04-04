@@ -58,7 +58,7 @@ directory that define the rock.
 ### NGINX
 
 NGINX is configured as a Pebble layer and is the entry point for all web traffic
-to the pod (on port `8080`). Serves static files directly and forwards
+to the pod (on port `8080`). It serves static files directly and forwards
 non-static requests to the Maubot container (on port `29316`).
 
 NGINX provides static content cache, reverse proxy, and load balancer among 
