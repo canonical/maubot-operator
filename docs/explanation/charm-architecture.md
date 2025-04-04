@@ -112,6 +112,7 @@ juju config maubot public-url=myserver.myserver.com
 3. Event handlers are defined in the charm's framework observers. An example looks like the following:
 ```python
 self.framework.observe(self.on.config_changed, self._on_config_changed)
+```
 4. The method `_on_config_changed` will take the necessary actions. 
 The actions include waiting for all the relations to be ready and then configuring
 the containers.
