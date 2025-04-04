@@ -48,7 +48,7 @@ to build OCI Image for Maubot.
 The image is defined in [Maubot rock](https://github.com/canonical/maubot-operator/tree/main/maubot_rock) and is published to [Charmhub](https://charmhub.io/), the official repository
 of charms.
 This is done by publishing a resource to Charmhub as described in the
-[Juju SDK How-to guides](https://juju.is/docs/sdk/publishing).
+[Charmcraft How-to guides](https://canonical-charmcraft.readthedocs-hosted.com/en/stable/howto/manage-charms/#publish-a-charm-on-charmhub).
 
 ## Container
 
