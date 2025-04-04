@@ -21,7 +21,7 @@ Container_Boundary(maubot, "Maubot Charm") {
   Component(maubot, "Maubot", "Maubot", "Workload")
   Component(blackbox, "Blackbox Exporter", "Prometheus Exporter", "Exports Maubot metrics to Prometheus")
 
-  Rel(blackbox-exporter, maubot, "")
+  Rel(blackbox, maubot, "")
   Rel(nginx, maubot, "")
 
 }
