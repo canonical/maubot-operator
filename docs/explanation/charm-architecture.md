@@ -53,7 +53,7 @@ This is done by publishing a resource to Charmhub as described in the
 ## Container
 
 Configuration files for the container can be found in the respective
-directory that define the rock, see the section above.
+directory that define the rock.
 
 ### NGINX
 
