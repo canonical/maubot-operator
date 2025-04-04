@@ -108,7 +108,7 @@ Take, for example, when a configuration is changed by using the CLI.
 ```bash
 juju config maubot public-url=myserver.myserver.com
 ```
-2. A `config-changed` event is emitted
+2. A `config-changed` event is emitted.
 3. Event handlers are defined in the charm's framework observers. An example looks like the following:
 ```python
 self.framework.observe(self.on.config_changed, self._on_config_changed)
