@@ -116,3 +116,22 @@ def test_delete_admin_action_success(base_state: dict, monkeypatch: MonkeyPatch)
     with open(config_file, "r") as file:
         config_data = yaml.safe_load(file)
     assert "test" not in config_data["admins"]
+
+
+def test_delete_admin_action_failure(base_state: dict, monkeypatch: MonkeyPatch):
+    """
+    arrange: prepare maubot container.
+    act: run delete-admin action.
+    assert: no test user is found and returns error.
+    """
+    state = testing.State(**base_state)
+    context = testing.Context(charm_type=MaubotCharm)
+    maubot_ready_mock = MagicMock(return_value=True)
+    monkeypatch.setattr("charm.MaubotCharm._is_maubot_ready", maubot_ready_mock)
+
+    try:
+        state = context.run(context.on.action("delete-admin", {"name": "test"}), state)
+    except testing.ActionFailed:
+        message = "test not found"
+        assert context.action_results["error"] == message
+        assert context.action_results["delete-user"] is False
