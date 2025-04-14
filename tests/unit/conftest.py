@@ -8,7 +8,7 @@ from pathlib import Path
 from secrets import token_hex
 
 import pytest
-from ops import testing
+from ops import pebble, testing
 
 
 @pytest.fixture(scope="function", name="base_state")
@@ -21,9 +21,27 @@ def base_state_fixture(tmp_path: Path):
         databases: null
         server:
             public_url: maubot.local
+        admins:
+            admin1: "2b$12$Rr4ZZctE6WATvCl/X7cmRuTJM3pS5hemqhkZWnl25bg1kQtqoQsVW"
+            root: ""
         """
         ),
         encoding="utf-8",
+    )
+    layer_tmp = pebble.Layer(
+        {
+            "summary": "maubot layer",
+            "description": "pebble config layer for maubot",
+            "services": {
+                "maubot": {
+                    "override": "replace",
+                    "summary": "maubot",
+                    "command": "python3 -m maubot -c /data/config.yaml",
+                    "startup": "enabled",
+                    "working-dir": "/data",
+                },
+            },
+        }
     )
     yield {
         "leader": True,
@@ -45,6 +63,7 @@ def base_state_fixture(tmp_path: Path):
                 mounts={
                     "data": testing.Mount(location="/data/config.yaml", source=config_file_path)
                 },
+                layers={"mock-layer": layer_tmp},
             )
         },
     }
