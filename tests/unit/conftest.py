@@ -33,13 +33,7 @@ def base_state_fixture(tmp_path: Path):
             "summary": "maubot layer",
             "description": "pebble config layer for maubot",
             "services": {
-                "maubot": {
-                    "override": "replace",
-                    "summary": "maubot",
-                    "command": "python3 -m maubot -c /data/config.yaml",
-                    "startup": "enabled",
-                    "working-dir": "/data",
-                },
+                "maubot": {},
             },
         }
     )
