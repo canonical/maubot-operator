@@ -251,7 +251,7 @@ class MaubotCharm(ops.CharmBase):
         """
         try:
             name = event.params["name"]
-            results: dict[str, str] = {}
+            results: dict[str, str | bool] = {}
             if name == "root":
                 raise EventFailError("root can not be deleted")
             if not self._is_maubot_ready():
@@ -261,7 +261,7 @@ class MaubotCharm(ops.CharmBase):
                 raise EventFailError(f"{name} not found")
             del config["admins"][name]
             self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
-            self.container.restart(MAUBOT_NAME)  # ToDo: Edit results if necessary
+            self.container.restart(MAUBOT_NAME)
             results["delete-user"] = True
             event.set_results(results)
         except EventFailError as e:

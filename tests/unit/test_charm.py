@@ -105,15 +105,22 @@ def test_delete_admin_action_success(base_state: dict, monkeypatch: MonkeyPatch)
     monkeypatch.setattr("charm.MaubotCharm._is_maubot_ready", maubot_ready_mock)
 
     state = context.run(context.on.action("create-admin", {"name": "test"}), state)
-    assert "password" in context.action_results
-    assert "error" not in context.action_results
+    assert context.action_results is not None
+    action_results: dict[str, str | bool] = context.action_results
+    assert "password" in action_results  # pylint: disable=unsupported-membership-test
+    assert "error" not in action_results  # pylint: disable=unsupported-membership-test
+
     _ = context.run(context.on.action("delete-admin", {"name": "test"}), state)
 
-    assert "error" not in context.action_results
-    assert context.action_results["delete-user"] is True
+    assert context.action_results is not None
+    action_results = context.action_results
+    assert "error" not in action_results  # pylint: disable=unsupported-membership-test
+    assert action_results["delete-user"] is True  # pylint: disable=unsubscriptable-object
+
+    # Test if actually not in config_data
     container_root_fs = list(base_state["containers"])[0].get_filesystem(context)
     config_file = container_root_fs / "data" / "config.yaml"
-    with open(config_file, "r") as file:
+    with open(config_file, "r", encoding="utf-8") as file:
         config_data = yaml.safe_load(file)
     assert "test" not in config_data["admins"]
 
@@ -133,5 +140,12 @@ def test_delete_admin_action_failure(base_state: dict, monkeypatch: MonkeyPatch)
         state = context.run(context.on.action("delete-admin", {"name": "test"}), state)
     except testing.ActionFailed:
         message = "test not found"
-        assert context.action_results["error"] == message
-        assert context.action_results["delete-user"] is False
+        if isinstance(context.action_results, dict):
+            assert (
+                context.action_results["error"]  # pylint: disable=unsubscriptable-object
+                == message
+            )
+            assert (
+                context.action_results["delete-user"]  # pylint: disable=unsubscriptable-object
+                is False
+            )
