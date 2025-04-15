@@ -262,10 +262,10 @@ class MaubotCharm(ops.CharmBase):
             del config["admins"][name]
             self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
             self.container.restart(MAUBOT_NAME)
-            results["delete-user"] = True
+            results["delete-admin"] = True
             event.set_results(results)
         except EventFailError as e:
-            results["delete-user"] = False
+            results["delete-admin"] = False
             results["error"] = str(e)
             event.set_results(results)
             event.fail(str(e))

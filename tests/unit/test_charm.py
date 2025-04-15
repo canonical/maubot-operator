@@ -115,7 +115,7 @@ def test_delete_admin_action_success(base_state: dict, monkeypatch: MonkeyPatch)
     assert context.action_results is not None
     action_results = context.action_results
     assert "error" not in action_results  # pylint: disable=unsupported-membership-test
-    assert action_results["delete-user"] is True  # pylint: disable=unsubscriptable-object
+    assert action_results["delete-admin"] is True  # pylint: disable=unsubscriptable-object
 
     # Test if actually not in config_data
     container_root_fs = list(base_state["containers"])[0].get_filesystem(context)
@@ -146,6 +146,6 @@ def test_delete_admin_action_failure(base_state: dict, monkeypatch: MonkeyPatch)
                 == message
             )
             assert (
-                context.action_results["delete-user"]  # pylint: disable=unsubscriptable-object
+                context.action_results["delete-admin"]  # pylint: disable=unsubscriptable-object
                 is False
             )
