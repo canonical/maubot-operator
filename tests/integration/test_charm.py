@@ -277,7 +277,7 @@ async def test_delete_admin_action_success(unit: Unit):
     await action.wait()
 
     assert "error" not in action.results
-    assert action.results["delete-admin"] is True
+    assert action.results["delete-admin"] == "True"
 
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
