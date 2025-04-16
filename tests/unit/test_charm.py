@@ -93,7 +93,7 @@ def test_matrix_auth_request_processed(
     reconcile_mock.assert_called_once()
 
 
-def test_delete_admin_action_success(base_state: dict, monkeypatch: MonkeyPatch):
+def test_delete_admin_action_success(base_state: dict):
     """
     arrange: prepare maubot container and add test admin with create-admin action.
     act: run delete-admin action.
@@ -125,7 +125,7 @@ def test_delete_admin_action_success(base_state: dict, monkeypatch: MonkeyPatch)
     assert "test" not in config_data["admins"]
 
 
-def test_delete_admin_action_failure(base_state: dict, monkeypatch: MonkeyPatch):
+def test_delete_admin_action_failure(base_state: dict):
     """
     arrange: prepare maubot container.
     act: run delete-admin action.
