@@ -252,6 +252,65 @@ async def test_reset_admin_password_action_failed(name: str, expected_message: s
     assert error == expected_message
 
 
+async def test_delete_admin_action_success(unit: Unit):
+    """
+    arrange: Maubot charm integrated with PostgreSQL and a user is added.
+    act: run the delete-admin action.
+    assert: login fails as the username doesn't exist.
+    """
+    name = "test2"
+    action = await unit.run_action("create-admin", name=name)
+    await action.wait()
+
+    assert "password" in action.results
+    password = action.results["password"]
+    response = requests.post(
+        "http://127.0.0.1/_matrix/maubot/v1/auth/login",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+        data=f'{{"username":"{name}","password":"{password}"}}',
+    )
+    assert response.status_code == 200
+    assert "token" in response.text
+
+    action = await unit.run_action("delete-admin", name=name)
+    await action.wait()
+
+    assert "error" not in action.results
+    assert action.results["delete-admin"] == "True"
+
+    response = requests.post(
+        "http://127.0.0.1/_matrix/maubot/v1/auth/login",
+        timeout=5,
+        headers={"Host": "maubot.local"},
+        data=f'{{"username":"{name}","password":"{password}"}}',
+    )
+
+    assert response.status_code == 401
+    assert "invalid_auth" in response.text
+
+
+@pytest.mark.parametrize(
+    "name,expected_message",
+    [
+        pytest.param("root", "root can not be deleted", id="root"),
+        pytest.param("test1", "test1 not found", id="user_not_found"),
+    ],
+)
+async def test_delete_admin_action_failed(name: str, expected_message: str, unit: Unit):
+    """
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the delete-admin action.
+    assert: the action results fails.
+    """
+    action = await unit.run_action("delete-admin", name=name)
+    await action.wait()
+
+    assert "error" in action.results
+    error = action.results["error"]
+    assert error == expected_message
+
+
 @pytest.mark.abort_on_fail
 async def test_public_url_config(
     model: Model,
