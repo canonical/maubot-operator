@@ -28,7 +28,7 @@ def base_state_fixture(tmp_path: Path):
         ),
         encoding="utf-8",
     )
-    layer_tmp = pebble.Layer(
+    pebble_layer = pebble.Layer(
         {
             "summary": "maubot layer",
             "description": "pebble config layer for maubot",
@@ -57,7 +57,8 @@ def base_state_fixture(tmp_path: Path):
                 mounts={
                     "data": testing.Mount(location="/data/config.yaml", source=config_file_path)
                 },
-                layers={"mock-layer": layer_tmp},
+                layers={"maubot": pebble_layer},
+                service_statuses={"maubot": pebble.ServiceStatus.ACTIVE},
             )
         },
     }

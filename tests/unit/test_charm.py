@@ -101,12 +101,11 @@ def test_delete_admin_action_success(base_state: dict, monkeypatch: MonkeyPatch)
     """
     state = testing.State(**base_state)
     context = testing.Context(charm_type=MaubotCharm)
-    maubot_ready_mock = MagicMock(return_value=True)
-    monkeypatch.setattr("charm.MaubotCharm._is_maubot_ready", maubot_ready_mock)
 
-    state = context.run(context.on.action("create-admin", {"name": "test"}), state)
+    _ = context.run(context.on.action("create-admin", {"name": "test"}), state)
     assert context.action_results is not None
     action_results: dict[str, str | bool] = context.action_results
+    # action_results can also be None, so pylint complains even though it's checked
     assert "password" in action_results  # pylint: disable=unsupported-membership-test
     assert "error" not in action_results  # pylint: disable=unsupported-membership-test
 
@@ -114,6 +113,7 @@ def test_delete_admin_action_success(base_state: dict, monkeypatch: MonkeyPatch)
 
     assert context.action_results is not None
     action_results = context.action_results
+    # action_results can also be None, so pylint complains even though it's checked
     assert "error" not in action_results  # pylint: disable=unsupported-membership-test
     assert action_results["delete-admin"] is True  # pylint: disable=unsubscriptable-object
 
@@ -133,14 +133,13 @@ def test_delete_admin_action_failure(base_state: dict, monkeypatch: MonkeyPatch)
     """
     state = testing.State(**base_state)
     context = testing.Context(charm_type=MaubotCharm)
-    maubot_ready_mock = MagicMock(return_value=True)
-    monkeypatch.setattr("charm.MaubotCharm._is_maubot_ready", maubot_ready_mock)
 
     try:
-        state = context.run(context.on.action("delete-admin", {"name": "test"}), state)
+        _ = context.run(context.on.action("delete-admin", {"name": "test"}), state)
     except testing.ActionFailed:
         message = "test not found"
         if isinstance(context.action_results, dict):
+            # action_results can also be None, so pylint complains even though it's checked
             assert (
                 context.action_results["error"]  # pylint: disable=unsubscriptable-object
                 == message
