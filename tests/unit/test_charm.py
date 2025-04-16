@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 import yaml
 from ops import testing
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, mark, param
 
 from charm import MaubotCharm
 
@@ -125,7 +125,14 @@ def test_delete_admin_action_success(base_state: dict):
     assert "test" not in config_data["admins"]
 
 
-def test_delete_admin_action_failure(base_state: dict):
+@mark.parametrize(
+    "name,expected_message",
+    [
+        param("root", "root can not be deleted", id="root"),
+        param("test", "test not found", id="user_not_found"),
+    ],
+)
+def test_delete_admin_action_failure(name: str, expected_message: str, base_state: dict):
     """
     arrange: prepare maubot container.
     act: run delete-admin action.
@@ -135,14 +142,13 @@ def test_delete_admin_action_failure(base_state: dict):
     context = testing.Context(charm_type=MaubotCharm)
 
     try:
-        _ = context.run(context.on.action("delete-admin", {"name": "test"}), state)
+        _ = context.run(context.on.action("delete-admin", {"name": name}), state)
     except testing.ActionFailed:
-        message = "test not found"
         if isinstance(context.action_results, dict):
             # action_results can also be None, so pylint complains even though it's checked
             assert (
                 context.action_results["error"]  # pylint: disable=unsubscriptable-object
-                == message
+                == expected_message
             )
             assert (
                 context.action_results["delete-admin"]  # pylint: disable=unsubscriptable-object

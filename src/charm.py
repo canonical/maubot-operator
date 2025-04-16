@@ -235,8 +235,12 @@ class MaubotCharm(ops.CharmBase):
             self.container.restart(MAUBOT_NAME)
             results["password"] = password
             event.set_results(results)
-        except EventFailError as e:
-            results["error"] = str(e)
+        except (EventFailError, pebble.PathError) as e:
+            if isinstance(e, pebble.PathError):
+                error_msg = "Pushing changes to container failed. Check the logs for more info."
+            else:
+                error_msg = str(e)
+            results["error"] = error_msg
             event.set_results(results)
             event.fail(str(e))
 
@@ -264,9 +268,13 @@ class MaubotCharm(ops.CharmBase):
             self.container.restart(MAUBOT_NAME)
             results["delete-admin"] = True
             event.set_results(results)
-        except EventFailError as e:
+        except (EventFailError, pebble.PathError) as e:
+            if isinstance(e, pebble.PathError):
+                error_msg = "Pushing changes to container failed. Check the logs for more info."
+            else:
+                error_msg = str(e)
             results["delete-admin"] = False
-            results["error"] = str(e)
+            results["error"] = error_msg
             event.set_results(results)
             event.fail(str(e))
 
@@ -295,8 +303,12 @@ class MaubotCharm(ops.CharmBase):
             self.container.restart(MAUBOT_NAME)
             results["password"] = password
             event.set_results(results)
-        except EventFailError as e:
-            results["error"] = str(e)
+        except (EventFailError, pebble.PathError) as e:
+            if isinstance(e, pebble.PathError):
+                error_msg = "Pushing changes to container failed. Check the logs for more info."
+            else:
+                error_msg = str(e)
+            results["error"] = error_msg
             event.set_results(results)
             event.fail(str(e))
 
