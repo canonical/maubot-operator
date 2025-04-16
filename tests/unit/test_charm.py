@@ -154,3 +154,33 @@ def test_delete_admin_action_failure(name: str, expected_message: str, base_stat
                 context.action_results["delete-admin"]  # pylint: disable=unsubscriptable-object
                 is False
             )
+
+
+def test_path_error(base_state: dict):
+    """
+    arrange: prepare maubot container.
+    act: run delete-admin action.
+    assert: no test user is found and returns error.
+    """
+    container = list(base_state["containers"])[0]
+    # mypy throws an error because it validates against ops.Container.
+    modified_container = testing.Container(  # type: ignore[call-arg, attr-defined]
+        name=container.name,
+        can_connect=container.can_connect,
+        execs=container.execs,
+        mounts={},  # Empty mounts
+        layers=container.layers,
+        service_statuses=container.service_statuses,
+    )
+    state = testing.State(**{**base_state, "containers": {modified_container}})
+    context = testing.Context(charm_type=MaubotCharm)
+
+    try:
+        _ = context.run(context.on.action("create-admin", {"name": "test"}), state)
+    except testing.ActionFailed:
+        if isinstance(context.action_results, dict):
+            # action_results can also be None, so pylint complains even though it's checked
+            assert (
+                context.action_results["error"]  # pylint: disable=unsubscriptable-object
+                == "Pushing changes to container failed. Check the logs for more info."
+            )
