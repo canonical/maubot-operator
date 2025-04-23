@@ -70,6 +70,12 @@ actions:
       name:
         type: string
         description: The name of the administrator user.
+  delete-admin:
+    description: Delete administrator user from Maubot.
+    params:
+      name:
+        type: string
+        description: The name of the administrator user.
   reset-admin-password:
     description: Reset password for administrator user.
     params:

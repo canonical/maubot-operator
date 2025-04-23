@@ -99,6 +99,7 @@ class MaubotCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         # Actions events handlers
         self.framework.observe(self.on.create_admin_action, self._on_create_admin_action)
+        self.framework.observe(self.on.delete_admin_action, self._on_delete_admin_action)
         self.framework.observe(
             self.on.reset_admin_password_action, self._on_reset_admin_password_action
         )
@@ -223,7 +224,7 @@ class MaubotCharm(ops.CharmBase):
             results: dict[str, str] = {}
             if name == "root":
                 raise EventFailError("root is reserved, please choose a different name")
-            if self._is_maubot_ready():
+            if not self._is_maubot_ready():
                 raise EventFailError("maubot is not ready")
             password = secrets.token_urlsafe(10)
             config = self._get_configuration()
@@ -234,8 +235,44 @@ class MaubotCharm(ops.CharmBase):
             self.container.restart(MAUBOT_NAME)
             results["password"] = password
             event.set_results(results)
-        except EventFailError as e:
-            results["error"] = str(e)
+        except (EventFailError, pebble.PathError) as e:
+            error_msg = str(e)
+            if isinstance(e, pebble.PathError):
+                error_msg = "Pushing changes to container failed. Check the logs for more info."
+            results["error"] = error_msg
+            event.set_results(results)
+            event.fail(str(e))
+
+    def _on_delete_admin_action(self, event: ops.ActionEvent) -> None:
+        """Handle delete-admin action.
+
+        Args:
+            event: Action event.
+
+        Raises:
+            EventFailError: in case the event fails.
+        """
+        try:
+            name = event.params["name"]
+            results: dict[str, str | bool] = {}
+            if name == "root":
+                raise EventFailError("root can not be deleted")
+            if not self._is_maubot_ready():
+                raise EventFailError("maubot is not ready")
+            config = self._get_configuration()
+            if name not in config["admins"]:
+                raise EventFailError(f"{name} not found")
+            del config["admins"][name]
+            self.container.push(MAUBOT_CONFIGURATION_PATH, yaml.safe_dump(config))
+            self.container.restart(MAUBOT_NAME)
+            results["delete-admin"] = True
+            event.set_results(results)
+        except (EventFailError, pebble.PathError) as e:
+            error_msg = str(e)
+            if isinstance(e, pebble.PathError):
+                error_msg = "Pushing changes to container failed. Check the logs for more info."
+            results["delete-admin"] = False
+            results["error"] = error_msg
             event.set_results(results)
             event.fail(str(e))
 
@@ -253,7 +290,7 @@ class MaubotCharm(ops.CharmBase):
             results: dict[str, str] = {}
             if name == "root":
                 raise EventFailError("action disabled, root is reserved.")
-            if self._is_maubot_ready():
+            if not self._is_maubot_ready():
                 raise EventFailError("maubot is not ready")
             password = secrets.token_urlsafe(10)
             config = self._get_configuration()
@@ -264,8 +301,11 @@ class MaubotCharm(ops.CharmBase):
             self.container.restart(MAUBOT_NAME)
             results["password"] = password
             event.set_results(results)
-        except EventFailError as e:
-            results["error"] = str(e)
+        except (EventFailError, pebble.PathError) as e:
+            error_msg = str(e)
+            if isinstance(e, pebble.PathError):
+                error_msg = "Pushing changes to container failed. Check the logs for more info."
+            results["error"] = error_msg
             event.set_results(results)
             event.fail(str(e))
 
@@ -282,7 +322,7 @@ class MaubotCharm(ops.CharmBase):
         """
         try:
             results: dict[str, str] = {}
-            if self._is_maubot_ready():
+            if not self._is_maubot_ready():
                 raise EventFailError("maubot is not ready")
 
             config = self._get_configuration()
@@ -325,9 +365,9 @@ class MaubotCharm(ops.CharmBase):
             True if Maubot is ready.
         """
         return (
-            not self.container.can_connect()
-            or MAUBOT_NAME not in self.container.get_plan().services
-            or not self.container.get_service(MAUBOT_NAME).is_running()
+            self.container.can_connect()
+            and MAUBOT_NAME in self.container.get_plan().services
+            and self.container.get_service(MAUBOT_NAME).is_running()
         )
 
     def _on_matrix_auth_request_processed(self, _: MatrixAuthRequestProcessed) -> None:

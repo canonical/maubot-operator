@@ -6,8 +6,9 @@
 import re
 from unittest.mock import MagicMock
 
+import yaml
 from ops import testing
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, mark, param
 
 from charm import MaubotCharm
 
@@ -90,3 +91,96 @@ def test_matrix_auth_request_processed(
     context.run(context.on.relation_changed(matrix_auth_relation), state)
 
     reconcile_mock.assert_called_once()
+
+
+def test_delete_admin_action_success(base_state: dict):
+    """
+    arrange: prepare maubot container and add test admin with create-admin action.
+    act: run delete-admin action.
+    assert: test admin is not in config and no error is raised.
+    """
+    state = testing.State(**base_state)
+    context = testing.Context(charm_type=MaubotCharm)
+
+    _ = context.run(context.on.action("create-admin", {"name": "test"}), state)
+    assert context.action_results is not None
+    action_results: dict[str, str | bool] = context.action_results
+    # action_results can also be None, so pylint complains even though it's checked
+    assert "password" in action_results  # pylint: disable=unsupported-membership-test
+    assert "error" not in action_results  # pylint: disable=unsupported-membership-test
+
+    _ = context.run(context.on.action("delete-admin", {"name": "test"}), state)
+
+    assert context.action_results is not None
+    action_results = context.action_results
+    # action_results can also be None, so pylint complains even though it's checked
+    assert "error" not in action_results  # pylint: disable=unsupported-membership-test
+    assert action_results["delete-admin"] is True  # pylint: disable=unsubscriptable-object
+
+    # Test if actually not in config_data
+    container_root_fs = list(base_state["containers"])[0].get_filesystem(context)
+    config_file = container_root_fs / "data" / "config.yaml"
+    with open(config_file, "r", encoding="utf-8") as file:
+        config_data = yaml.safe_load(file)
+    assert "test" not in config_data["admins"]
+
+
+@mark.parametrize(
+    "name,expected_message",
+    [
+        param("root", "root can not be deleted", id="root"),
+        param("test", "test not found", id="user_not_found"),
+    ],
+)
+def test_delete_admin_action_failure(name: str, expected_message: str, base_state: dict):
+    """
+    arrange: prepare maubot container.
+    act: run delete-admin action.
+    assert: no test user is found and returns error.
+    """
+    state = testing.State(**base_state)
+    context = testing.Context(charm_type=MaubotCharm)
+
+    try:
+        _ = context.run(context.on.action("delete-admin", {"name": name}), state)
+    except testing.ActionFailed:
+        if isinstance(context.action_results, dict):
+            # action_results can also be None, so pylint complains even though it's checked
+            assert (
+                context.action_results["error"]  # pylint: disable=unsubscriptable-object
+                == expected_message
+            )
+            assert (
+                context.action_results["delete-admin"]  # pylint: disable=unsubscriptable-object
+                is False
+            )
+
+
+def test_path_error(base_state: dict):
+    """
+    arrange: prepare maubot container.
+    act: run delete-admin action.
+    assert: no test user is found and returns error.
+    """
+    container = list(base_state["containers"])[0]
+    # mypy throws an error because it validates against ops.Container.
+    modified_container = testing.Container(  # type: ignore[call-arg, attr-defined]
+        name=container.name,
+        can_connect=container.can_connect,
+        execs=container.execs,
+        mounts={},  # Empty mounts
+        layers=container.layers,
+        service_statuses=container.service_statuses,
+    )
+    state = testing.State(**{**base_state, "containers": {modified_container}})
+    context = testing.Context(charm_type=MaubotCharm)
+
+    try:
+        _ = context.run(context.on.action("create-admin", {"name": "test"}), state)
+    except testing.ActionFailed:
+        if isinstance(context.action_results, dict):
+            # action_results can also be None, so pylint complains even though it's checked
+            assert (
+                context.action_results["error"]  # pylint: disable=unsubscriptable-object
+                == "Pushing changes to container failed. Check the logs for more info."
+            )
