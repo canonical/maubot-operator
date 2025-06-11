@@ -142,9 +142,9 @@ async def test_loki_endpoint(ops_test: OpsTest, model: Model):  # pylint: disabl
             relation_name = "provide-loki-push-api"
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.loki_provider = LokiPushApiProvider(self, relation_name=relation_name)
+                self.loki_provider = LokiPushApiProvider(self, relation_name=self.relation_name)
             def get_relation_id(self):
-                relation = self.model.get_relation(relation_name)
+                relation = self.model.get_relation(self.relation_name)
                 return relation.id
         """
         ),
