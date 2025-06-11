@@ -139,11 +139,12 @@ async def test_loki_endpoint(ops_test: OpsTest, model: Model):  # pylint: disabl
         from loki_push_api import LokiPushApiProvider
         from any_charm_base import AnyCharmBase
         class AnyCharm(AnyCharmBase):
+            relation_name = "provide-loki-push-api"
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.loki_provider = LokiPushApiProvider(self, relation_name="provide-logging")
+                self.loki_provider = LokiPushApiProvider(self, relation_name=relation_name)
             def get_relation_id(self):
-                relation = self.model.get_relation("provide-logging")
+                relation = self.model.get_relation(relation_name)
                 return relation.id
         """
         ),
