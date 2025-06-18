@@ -40,6 +40,7 @@ The Maubot charm deploys a container named `maubot` with the following Pebble la
 
 3. blackbox: A [Prometheus blackbox exporter](https://github.com/prometheus/blackbox_exporter) instance that collects metrics from the Maubot HTTP endpoint.
 
+
 ## OCI images
 
 We use [Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/en/latest/)
