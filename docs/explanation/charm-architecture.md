@@ -81,7 +81,7 @@ The workload that this container is running is defined in the [Maubot rock](http
 ### Blackbox
 
 Blackbox is a Prometheus exporter used to collect metrics from HTTP, HTTPS, DNS, 
-TCP, ICMP, and gRPC endpoints. 
+TCP, ICMP, and gRPC endpoints.
 
 Using this exporter, it is possible to monitor Maubot's performance while
 handling HTTP requests.
