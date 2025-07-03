@@ -5,7 +5,7 @@ It integrates with [PostgreSQL](https://www.postgresql.org/) as its database,
 which is provided by the [PostgreSQL charm](https://charmhub.io/postgresql).
 
 The Maubot charm can be integrated with the [Synapse charm](https://charmhub.io/synapse), enabling bot
-installation and usage on the existing Matrix homeserver.
+installation and usage on the existing Matrix home server.
 
 Pebble is a lightweight, API-driven process supervisor that is responsible for
 configuring processes to run in a container and controlling those processes
@@ -55,7 +55,10 @@ This is done by publishing a resource to Charmhub as described in the
 Configuration files for the container can be found in the respective
 directory that define the rock.
 
+<!-- vale Canonical.007-Headings-sentence-case = off -->
+<!-- it is commonly stylized all uppercase -->
 ### NGINX
+<!-- vale Canonical.007-Headings-sentence-case = on -->
 
 NGINX is configured as a Pebble layer and is the entry point for all web traffic
 to the pod (on port `8080`). It serves static files directly and forwards
@@ -78,7 +81,7 @@ The workload that this container is running is defined in the [Maubot rock](http
 
 ### Blackbox
 
-Blackbox is a Prometheus exporter used to collect metrics from HTTP, HTTPS, DNS,
+Blackbox is a Prometheus exporter used to collect metrics from HTTP, HTTPS, DNS, 
 TCP, ICMP, and gRPC endpoints.
 
 Using this exporter, it is possible to monitor Maubot's performance while
