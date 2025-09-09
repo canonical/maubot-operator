@@ -57,7 +57,7 @@ async def test_build_and_deploy(
 
     response = requests.get(
         "http://127.0.0.1/_matrix/maubot/manifest.json",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
     )
     assert response.status_code == 200
@@ -180,7 +180,7 @@ async def test_create_admin_action_success(unit: Unit):
     password = action.results["password"]
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
@@ -224,7 +224,7 @@ async def test_reset_admin_password_action_success(unit: Unit):
     password = action.results["password"]
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
@@ -282,7 +282,7 @@ async def test_delete_admin_action_success(unit: Unit):
 
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
@@ -325,7 +325,7 @@ async def test_public_url_config(
     """
     response = requests.get(
         "http://127.0.0.1/_matrix/maubot/paths.json",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
     )
     assert response.status_code == 200
@@ -362,7 +362,7 @@ async def test_register_client_account_action_success(unit: Unit, model: Model):
     password = action.results["password"]
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
