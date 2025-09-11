@@ -1,36 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "automerge": true,
   "extends": [
     "config:base"
-  ],
-  "regexManagers": [
-    {
-      "fileMatch": ["(^|/)rockcraft.yaml$"],
-      "description": "Update base image references",
-      "matchStringsStrategy": "any",
-      "matchStrings": ["# renovate: build-base:\\s+(?<depName>[^:]*):(?<currentValue>[^\\s@]*)(@(?<currentDigest>sha256:[0-9a-f]*))?",
-      "# renovate: base:\\s+(?<depName>[^:]*):(?<currentValue>[^\\s@]*)(@(?<currentDigest>sha256:[0-9a-f]*))?"],
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "ubuntu"
-    },
-    {
-      "fileMatch": ["(^|/)rockcraft.yaml$"],
-      "description": "Update Maubot workload",
-      "matchStringsStrategy": "any",
-      "matchStrings": ["maubot==(?<currentValue>.+)", "version: (?<currentValue>.+)"],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "maubot/maubot",
-      "versioningTemplate": "semver-coerced"
-    },
-    {
-      "fileMatch": ["(^|/)rockcraft.yaml$"],
-      "description": "Update Blackbox",
-      "matchStringsStrategy": "any",
-      "matchStrings": ["v(?<currentValue>.+)\/blackbox_exporter","blackbox_exporter-(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "prometheus/blackbox_exporter",
-      "versioningTemplate": "semver-coerced"
-    }
   ],
   "packageRules": [
     {
@@ -40,6 +12,48 @@
       ],
       "pinDigests": true
     }
+  ],
+  "regexManagers": [
+    {
+      "datasourceTemplate": "docker",
+      "description": "Update base image references",
+      "fileMatch": [
+        "(^|/)rockcraft.yaml$"
+      ],
+      "matchStrings": [
+        "# renovate: build-base:\\s+(?<depName>[^:]*):(?<currentValue>[^\\s@]*)(@(?<currentDigest>sha256:[0-9a-f]*))?",
+        "# renovate: base:\\s+(?<depName>[^:]*):(?<currentValue>[^\\s@]*)(@(?<currentDigest>sha256:[0-9a-f]*))?"
+      ],
+      "matchStringsStrategy": "any",
+      "versioningTemplate": "ubuntu"
+    },
+    {
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "maubot/maubot",
+      "description": "Update Maubot workload",
+      "fileMatch": [
+        "(^|/)rockcraft.yaml$"
+      ],
+      "matchStrings": [
+        "maubot==(?<currentValue>.+)",
+        "version: (?<currentValue>.+)"
+      ],
+      "matchStringsStrategy": "any",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "prometheus/blackbox_exporter",
+      "description": "Update Blackbox",
+      "fileMatch": [
+        "(^|/)rockcraft.yaml$"
+      ],
+      "matchStrings": [
+        "v(?<currentValue>.+)/blackbox_exporter",
+        "blackbox_exporter-(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "matchStringsStrategy": "any",
+      "versioningTemplate": "semver-coerced"
+    }
   ]
 }
-
