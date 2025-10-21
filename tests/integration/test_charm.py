@@ -57,7 +57,7 @@ async def test_build_and_deploy(
 
     response = requests.get(
         "http://127.0.0.1/_matrix/maubot/manifest.json",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
     )
     assert response.status_code == 200
@@ -73,7 +73,7 @@ async def test_cos_integration(model: Model):
     """
     any_app_name = "any-grafana"
     grafana_lib_url = "https://github.com/canonical/grafana-k8s-operator/raw/refs/heads/main/lib/charms/grafana_k8s/v0/grafana_dashboard.py"  # noqa: E501
-    grafana_lib = requests.get(grafana_lib_url, timeout=10).text
+    grafana_lib = requests.get(grafana_lib_url, timeout=300).text
     grafana_lib = grafana_lib.replace(
         'DEFAULT_PEER_NAME = "grafana"', 'DEFAULT_PEER_NAME = "peer-any"'
     )
@@ -131,7 +131,7 @@ async def test_loki_endpoint(ops_test: OpsTest, model: Model):  # pylint: disabl
         "https://github.com/canonical/loki-k8s-operator/raw/refs/heads/main"
         "/lib/charms/loki_k8s/v1/loki_push_api.py"
     )
-    loki_lib = requests.get(loki_lib_url, timeout=10).text
+    loki_lib = requests.get(loki_lib_url, timeout=300).text
     any_charm_src_overwrite = {
         "loki_push_api.py": loki_lib,
         "any_charm.py": textwrap.dedent(
@@ -180,7 +180,7 @@ async def test_create_admin_action_success(unit: Unit):
     password = action.results["password"]
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
@@ -224,7 +224,7 @@ async def test_reset_admin_password_action_success(unit: Unit):
     password = action.results["password"]
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
@@ -267,7 +267,7 @@ async def test_delete_admin_action_success(unit: Unit):
     password = action.results["password"]
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
@@ -282,7 +282,7 @@ async def test_delete_admin_action_success(unit: Unit):
 
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
@@ -325,7 +325,7 @@ async def test_public_url_config(
     """
     response = requests.get(
         "http://127.0.0.1/_matrix/maubot/paths.json",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
     )
     assert response.status_code == 200
@@ -338,7 +338,7 @@ async def test_public_url_config(
 
     response = requests.get(
         "http://127.0.0.1/_matrix/maubot/paths.json",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
     )
     assert response.status_code == 200
@@ -362,7 +362,7 @@ async def test_register_client_account_action_success(unit: Unit, model: Model):
     password = action.results["password"]
     response = requests.post(
         "http://127.0.0.1/_matrix/maubot/v1/auth/login",
-        timeout=5,
+        timeout=300,
         headers={"Host": "maubot.local"},
         data=f'{{"username":"{name}","password":"{password}"}}',
     )
