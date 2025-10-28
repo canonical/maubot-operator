@@ -1,0 +1,6 @@
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  maubot/0 [executing] active: 
+  postgresql-k8s/0 [idle] active: Primary
+  nginx-ingress-integrator/0 [idle] active: Ingress IP(s): 127.0.0.1
+  any-grafana/0 [idle] active: 
+  any-loki/0 [idle] active:
