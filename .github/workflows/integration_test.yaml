@@ -13,3 +13,8 @@ jobs:
       juju-channel: 3.4/stable
       self-hosted-runner: false
       self-hosted-runner-label: "edge"
+  allure-report:
+    if: always() && !cancelled()
+    needs:
+      - integration-tests
+    uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main
