@@ -1,0 +1,34 @@
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller           Cloud/Region  Version  SLA          Timestamp
+testing  github-pr-1ff5b-k8s  k8s           3.6.11   unsupported  11:39:59Z
+
+App                       Version  Status  Scale  Charm                     Channel      Rev  Address         Exposed  Message
+maubot                             active      1  maubot                                   0  10.152.183.43   no       
+nginx-ingress-integrator  24.2.0   active      1  nginx-ingress-integrator  latest/edge  236  10.152.183.136  no       
+postgresql-k8s            14.15    active      1  postgresql-k8s            14/stable    495  10.152.183.189  no       
+
+Unit                         Workload  Agent  Address    Ports  Message
+maubot/0*                    active    idle   10.1.0.24         
+nginx-ingress-integrator/0*  active    idle   10.1.0.27         
+postgresql-k8s/0*            active    idle   10.1.0.1          Primary
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-maubot-0: 11:33:46 ERROR unit.maubot/0.juju-log failed to stop maubot
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-maubot-0/charm/./src/charm.py", line 166, in _reconcile
+    self.container.stop(MAUBOT_NAME)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/model.py", line 2699, in stop
+    self._pebble.stop_services(service_names)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2381, in stop_services
+    return self._services_action('stop', services, timeout, delay)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2430, in _services_action
+    resp = self._request('POST', '/v1/services', body=body)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2189, in _request
+    response = self._request_raw(method, path, query, headers, data)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2239, in _request_raw
+    raise APIError(body, code, status, message) from None
+ops.pebble.APIError: cannot stop services: service "maubot" does not exist
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...

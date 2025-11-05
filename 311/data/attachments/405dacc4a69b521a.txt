@@ -1,0 +1,5 @@
+[33mWARNING [0m charms.loki_k8s.v1.loki_push_api:loki_push_api.py:2499 Juju version 0.0.0 does not support Pebble log forwarding. Juju >= 3.4 is needed.
+[32mINFO    [0m charms.data_platform_libs.v0.data_interfaces:data_interfaces.py:3861 database created at 2025-11-05 11:39:59.362859
+[33mWARNING [0m root:charm.py:419 no matrix-auth relation found, getting default matrix credentials
+[33mWARNING [0m charms.loki_k8s.v1.loki_push_api:loki_push_api.py:2649 No Loki endpoints available
+[33mWARNING [0m root:charm.py:419 no matrix-auth relation found, getting default matrix credentials
