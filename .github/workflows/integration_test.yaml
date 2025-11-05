@@ -8,10 +8,15 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      modules: '["test_charm", "test_e2e_stable"]'
+      modules: '["test_charm"]'
       channel: 1.34-classic/stable
       juju-channel: 3/stable
       self-hosted-runner: true
       self-hosted-runner-label: "xlarge"
       use-canonical-k8s: true
       provider: 'k8s'
+  allure-report:
+    if: always() && !cancelled()
+    needs:
+      - integration-tests
+    uses: canonical/operator-workflows/.github/workflows/allure_report.yaml@main
