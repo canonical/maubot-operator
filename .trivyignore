@@ -1,2 +1,6 @@
 # stdlib issue - fixed in v.1.24.6 (currently v.1.24.4)
 CVE-2025-47907
+CVE-2025-58183
+CVE-2025-58186
+CVE-2025-58187
+CVE-2025-58188
