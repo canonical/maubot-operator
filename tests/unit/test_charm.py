@@ -120,7 +120,7 @@ def test_delete_admin_action_success(base_state: dict):
     # Test if actually not in config_data
     container_root_fs = list(base_state["containers"])[0].get_filesystem(context)
     config_file = container_root_fs / "data" / "config.yaml"
-    with open(config_file, "r", encoding="utf-8") as file:
+    with open(config_file, encoding="utf-8") as file:
         config_data = yaml.safe_load(file)
     assert "test" not in config_data["admins"]
 

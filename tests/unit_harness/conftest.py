@@ -3,7 +3,6 @@
 
 """Fixtures for maubot unit tests."""
 
-
 import pytest
 from ops.testing import Harness
 

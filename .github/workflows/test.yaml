@@ -10,3 +10,4 @@ jobs:
     with:
       charmcraft-channel: latest/edge
       self-hosted-runner: false
+      with-uv: true
