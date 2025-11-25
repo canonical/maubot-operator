@@ -154,7 +154,7 @@ class MaubotCharm(ops.CharmBase):
     def _reconcile(self) -> None:
         # Ignoring DC050 for now since RuntimeError is handled/re-raised only
         # because a Harness issue.
-        """Reconcile workload configuration."""  # noqa: DCO050
+        """Reconcile workload configuration."""
         self.unit.status = ops.MaintenanceStatus()
         if not self.container.can_connect():
             return
