@@ -44,7 +44,7 @@ def test_config_changed_with_postgresql(base_state: dict, postgresql_relation):
     out = context.run(context.on.config_changed(), state)
 
     assert out.unit_status == testing.ActiveStatus()
-    container_root_fs = list(base_state["containers"])[0].get_filesystem(context)
+    container_root_fs = next(iter(base_state["containers"])).get_filesystem(context)
     config_file = container_root_fs / "data" / "config.yaml"
     pattern = r"postgresql:\/\/[^:]+:[^@]+@[^\/]+\/[^\/]+"
     assert re.search(pattern, config_file.read_text())
@@ -118,7 +118,7 @@ def test_delete_admin_action_success(base_state: dict):
     assert action_results["delete-admin"] is True  # pylint: disable=unsubscriptable-object
 
     # Test if actually not in config_data
-    container_root_fs = list(base_state["containers"])[0].get_filesystem(context)
+    container_root_fs = next(iter(base_state["containers"])).get_filesystem(context)
     config_file = container_root_fs / "data" / "config.yaml"
     with open(config_file, encoding="utf-8") as file:
         config_data = yaml.safe_load(file)
@@ -162,7 +162,7 @@ def test_path_error(base_state: dict):
     act: run delete-admin action.
     assert: no test user is found and returns error.
     """
-    container = list(base_state["containers"])[0]
+    container = next(iter(base_state["containers"]))
     # mypy throws an error because it validates against ops.Container.
     modified_container = testing.Container(  # type: ignore[call-arg, attr-defined]
         name=container.name,
