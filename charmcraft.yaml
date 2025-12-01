@@ -34,15 +34,10 @@ containers:
       location: /data
 parts:
   charm:
+    source: .
+    plugin: uv
     build-snaps:
-      - rustup
-    override-build: |
-      rustup default stable
-      craftctl default
-    build-packages:
-      - libffi-dev
-      - libssl-dev
-      - pkg-config
+    - astral-uv
 platforms:
   amd64:
 provides:
