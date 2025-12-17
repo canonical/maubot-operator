@@ -1,5 +1,9 @@
 # Changelog
 
+## 2025-12-17
+
+- Moved charm-architecture.md from Explanation to Reference category.
+
 ### 2025-09-23
 
 - Add terraform module.
