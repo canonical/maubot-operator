@@ -1,0 +1,145 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    arrange: initialize harness and verify that the credentials are set with default values.
+    act: set matrix-auth integration.
+    assert: matrix credentials are set as expected.
+    ","14","test_matrix_credentials_registered","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: deploy Maubot and postgresql and integrate them.
+    act: send a request to retrieve metadata about maubot.
+    assert: the Maubot charm becomes active once is integrated with postgresql.
+        Charm is still active after integrating it with Nginx and the request
+        is successful.
+    ","273018","test_build_and_deploy","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the create-admin action.
+    assert: the action results fails.
+    ","1021","test_create_admin_action_failed[user_exists]","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize harness and verify that there is no credentials.
+    act: set postgresql integration.
+    assert: postgresql credentials are set as expected.
+    ","12","test_database_created","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the reset-admin-password action.
+    assert: the action results fails.
+    ","1024","test_reset_admin_password_action_failed[root]","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness with handle_exec and
+        config.yaml file.
+    act: emit container pebble ready event.
+    assert: Charm is blocked due to the missing PostgreSQL integration.
+    ","19","test_maubot_pebble_ready_postgresql_required","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness and set up all required integration.
+    act: run register-client-account charm action with non-existent user.
+    assert: event fails.
+    ","85","test_register_client_account_action_param_failed","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the create-admin action.
+    assert: the action results contains a password.
+    ","2297","test_create_admin_action_success","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness and set up all required integration.
+    act: run reset-admin-password.
+    assert: ensure action fails.
+    ","18","test_reset_admin_password_action_failed","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: deploy Anycharm.
+    act: integrate Maubot with Anycharm.
+    assert: Run action that validates if dashboard is present.
+    ","41948","test_cos_integration","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness and set up all required integration.
+    act: run create-admin charm action with reserved name root.
+    assert: ensure action fails.
+    ","17","test_create_admin_action_failed","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness with handle_exec and
+        config.yaml file.
+    act: retrieve the pebble plan for maubot.
+    assert: ensure the maubot pebble plan matches the expectations,
+        the service is running and the charm is active.
+    ","7","test_maubot_pebble_ready","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness and set up all required integration.
+    act: mock API call to fail and run register-client-account charm action.
+    assert: event fails.
+    ","24","test_register_client_account_action_api_failed","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL and AnyCharm(matrix-auth)
+        and admin user is created.
+    act: run the register-client-account action.
+    assert: the action results contains a password.
+    ","213198","test_register_client_account_action_success","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the reset-admin-password action.
+    assert: the action results fails.
+    ","1024","test_reset_admin_password_action_failed[user_not_found]","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness and set up all required integration.
+    act: mock API call to succeed and run register-client-account charm action.
+    assert: ensure expected data is in the results.
+    ","19","test_register_client_account_action_success","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the delete-admin action.
+    assert: the action results fails.
+    ","1021","test_delete_admin_action_failed[user_not_found]","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness, set up all required integration
+        and create an admin user.
+    act: run reset-admin-password.
+    assert: ensure password is in the results.
+    ","21","test_reset_admin_password_action_success","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"Deploy Maubot and integrations","658397","test_deploy_stable","tests.integration","2025-12-20","broken","2025-12-20","","test_e2e_stable","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the reset-admin-password action.
+    assert: the action results contains a password.
+    ","2298","test_reset_admin_password_action_success","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot is active and paths.json contains default value.
+    act: change public_url with a different path called /internal/.
+    assert: api_path contains the extra subpath /internal/ extracted from the
+        public_url.
+    ","21138","test_public_url_config","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: after Maubot is deployed and relations established
+    act: any-loki is deployed and joins the relation
+    assert: pebble plan inside maubot has logging endpoint.
+    ","42849","test_loki_endpoint","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the create-admin action.
+    assert: the action results fails.
+    ","1021","test_create_admin_action_failed[root]","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL and a user is added.
+    act: run the delete-admin action.
+    assert: login fails as the username doesn't exist.
+    ","4325","test_delete_admin_action_success","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: Maubot charm integrated with PostgreSQL.
+    act: run the delete-admin action.
+    assert: the action results fails.
+    ","1025","test_delete_admin_action_failed[root]","tests.integration","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize harness and set postgresql integration.
+    act: change public-url config.
+    assert: charm is active.
+    ","22","test_public_url_config_changed","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness and set up all required integration.
+    act: run create-admin charm action.
+    assert: ensure password is in the results.
+    ","20","test_create_admin_action_success","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""
+"
+    arrange: initialize the testing harness and set up all required integration except matrix-auth.
+    act: run register-client-account charm action.
+    assert: event fails.
+    ","22","test_register_client_account_action_matrix_auth_failed","tests.unit_harness","2025-12-20","passed","2025-12-20","","test_charm","",""

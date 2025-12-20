@@ -1,0 +1,35 @@
+[33mWARNING [0m charms.loki_k8s.v1.loki_push_api:loki_push_api.py:2499 Juju version 0.0.0 does not support Pebble log forwarding. Juju >= 3.4 is needed.
+[1m[31mERROR   [0m asyncio:base_events.py:1821 Task was destroyed but it is pending!
+task: <Task pending name='Task-61' coro=<Connection.keepalive() running at /home/runner/work/maubot-operator/maubot-operator/.tox/integration/lib/python3.12/site-packages/websockets/asyncio/connection.py:815> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[1m[31mERROR   [0m asyncio:base_events.py:1821 Task was destroyed but it is pending!
+task: <Task pending name='Task_Pinger' coro=<Connection._pinger() running at /home/runner/work/maubot-operator/maubot-operator/.tox/integration/lib/python3.12/site-packages/juju/client/connection.py:529> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[1m[31mERROR   [0m asyncio:base_events.py:1821 Task was destroyed but it is pending!
+task: <Task pending name='Task_Receiver' coro=<Connection._receiver() running at /home/runner/work/maubot-operator/maubot-operator/.tox/integration/lib/python3.12/site-packages/juju/client/connection.py:481> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[1m[31mERROR   [0m asyncio:base_events.py:1821 Task was destroyed but it is pending!
+task: <Task pending name='Task-9707' coro=<Connection.recv() running at /home/runner/work/maubot-operator/maubot-operator/.tox/integration/lib/python3.12/site-packages/websockets/asyncio/connection.py:303> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[create_task_with_handler.<locals>._task_result_exp_handler(task_name='tmp', logger=<Logger juju....ection (INFO)>)() at /home/runner/work/maubot-operator/maubot-operator/.tox/integration/lib/python3.12/site-packages/juju/_jasyncio.py:32]>
+[1m[31mERROR   [0m asyncio:base_events.py:1821 Task was destroyed but it is pending!
+task: <Task pending name='Task-9708' coro=<Event.wait() running at /usr/lib/python3.12/asyncio/locks.py:212> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[33mWARNING [0m charms.loki_k8s.v1.loki_push_api:loki_push_api.py:2649 No Loki endpoints available
+[1m[31mERROR   [0m root:charm.py:175 failed to stop maubot
+Traceback (most recent call last):
+  File "/home/runner/work/maubot-operator/maubot-operator/src/charm.py", line 162, in _reconcile
+    self._configure_maubot()
+  File "/home/runner/work/maubot-operator/maubot-operator/src/charm.py", line 149, in _configure_maubot
+    config["database"] = self._get_postgresql_credentials()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/maubot-operator/maubot-operator/src/charm.py", line 389, in _get_postgresql_credentials
+    raise MissingRelationDataError(
+charm.MissingRelationDataError: No postgresql relation data
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/work/maubot-operator/maubot-operator/src/charm.py", line 166, in _reconcile
+    self.container.stop(MAUBOT_NAME)
+  File "/home/runner/work/maubot-operator/maubot-operator/.tox/integration/lib/python3.12/site-packages/ops/model.py", line 2630, in stop
+    self._pebble.stop_services(service_names)
+  File "/home/runner/work/maubot-operator/maubot-operator/.tox/integration/lib/python3.12/site-packages/ops/_private/harness.py", line 3286, in stop_services
+    raise self._api_error(400, f'cannot stop services: service {name} does not exist')
+ops.pebble.APIError: cannot stop services: service maubot does not exist
+[32mINFO    [0m charms.data_platform_libs.v0.data_interfaces:data_interfaces.py:3906 database created at 2025-12-20 15:39:39.532428
+[33mWARNING [0m root:charm.py:419 no matrix-auth relation found, getting default matrix credentials
