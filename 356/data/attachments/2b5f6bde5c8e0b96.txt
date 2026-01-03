@@ -1,0 +1,68 @@
+[32mINFO    [0m juju.model:__init__.py:2301 Deploying ch:amd64/jammy/synapse-523
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  maubot/0 [idle] active: 
+  postgresql-k8s/0 [idle] active: Primary
+  nginx-ingress-integrator/0 [idle] active: Ingress IP(s): 127.0.0.1
+  any-grafana/0 [idle] active: 
+  any-loki/0 [idle] active: 
+  synapse/0 [allocating] waiting: installing agent
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] maintenance: Waiting for Synapse pebble
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] maintenance: Waiting for Synapse pebble
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] maintenance: Waiting for Synapse pebble
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] maintenance: Configuring Synapse
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  synapse/0 [idle] active: 
+[33mWARNING [0m juju.model:__init__.py:1683 relate is deprecated and will be removed. Use integrate instead.
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  maubot/0 [idle] active: 
+  postgresql-k8s/0 [idle] active: Primary
+  nginx-ingress-integrator/0 [idle] active: Ingress IP(s): 127.0.0.1
+  any-grafana/0 [idle] active: 
+  any-loki/0 [idle] active: 
+  synapse/0 [executing] active: 
+[32mINFO    [0m juju.model:__init__.py:3254 Waiting for model:
+  maubot/0 [idle] active:
+[32mINFO    [0m pytest_operator.plugin:plugin.py:951 Model status:
+
+Model    Controller                Cloud/Region        Version  SLA          Timestamp
+testing  github-pr-0d315-microk8s  microk8s/localhost  3.6.12   unsupported  15:29:07Z
+
+App                       Version  Status  Scale  Charm                     Channel      Rev  Address         Exposed  Message
+any-grafana                        active      1  any-charm                 latest/beta  124  10.152.183.103  no       
+any-loki                           active      1  any-charm                 latest/beta  124  10.152.183.110  no       
+maubot                             active      1  maubot                                   0  10.152.183.216  no       
+nginx-ingress-integrator  24.2.0   active      1  nginx-ingress-integrator  latest/edge  254  10.152.183.165  no       Ingress IP(s): 127.0.0.1
+postgresql-k8s            14.15    active      1  postgresql-k8s            14/stable    495  10.152.183.158  no       
+synapse                            active      1  synapse                   latest/edge  523  10.152.183.84   no       
+
+Unit                         Workload  Agent  Address      Ports  Message
+any-grafana/0*               active    idle   10.1.206.80         
+any-loki/0*                  active    idle   10.1.206.81         
+maubot/0*                    active    idle   10.1.206.76         
+nginx-ingress-integrator/0*  active    idle   10.1.206.79         Ingress IP(s): 127.0.0.1
+postgresql-k8s/0*            active    idle   10.1.206.78         Primary
+synapse/0*                   active    idle   10.1.206.83         
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:957 Juju error logs:
+
+unit-maubot-0: 15:19:44 ERROR unit.maubot/0.juju-log failed to stop maubot
+Traceback (most recent call last):
+  File "/var/lib/juju/agents/unit-maubot-0/charm/./src/charm.py", line 166, in _reconcile
+    self.container.stop(MAUBOT_NAME)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/model.py", line 2630, in stop
+    self._pebble.stop_services(service_names)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2374, in stop_services
+    return self._services_action('stop', services, timeout, delay)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2423, in _services_action
+    resp = self._request('POST', '/v1/services', body=body)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2182, in _request
+    response = self._request_raw(method, path, query, headers, data)
+  File "/var/lib/juju/agents/unit-maubot-0/charm/venv/ops/pebble.py", line 2232, in _request_raw
+    raise APIError(body, code, status, message) from None
+ops.pebble.APIError: cannot stop services: service "maubot" does not exist
+
+[32mINFO    [0m pytest_operator.plugin:plugin.py:1039 Forgetting model main...
