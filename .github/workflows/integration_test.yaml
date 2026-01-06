@@ -13,7 +13,6 @@ jobs:
       channel: 1.35-strict/stable
       charmcraft-channel: latest/edge
       juju-channel: 3.6/stable
-      self-hosted-runner: false
       self-hosted-runner-label: "edge"
       with-uv: true
   allure-report:
