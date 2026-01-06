@@ -11,9 +11,7 @@ jobs:
     secrets: inherit
     with:
       channel: 1.35-strict/stable
-      charmcraft-channel: latest/edge
       juju-channel: 3.6/stable
-      self-hosted-runner-label: "edge"
       with-uv: true
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
