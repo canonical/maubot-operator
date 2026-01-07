@@ -7,15 +7,12 @@ on:
 
 jobs:
   integration-tests:
-    uses: 
-      canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      channel: 1.28-strict/stable
-      charmcraft-channel: latest/edge
+      channel: 1.35-strict/stable
       juju-channel: 3.6/stable
-      self-hosted-runner: false
-      self-hosted-runner-label: "edge"
+      with-uv: true
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:

@@ -72,7 +72,7 @@ async def test_cos_integration(model: Model):
     assert: Run action that validates if dashboard is present.
     """
     any_app_name = "any-grafana"
-    grafana_lib_url = "https://github.com/canonical/grafana-k8s-operator/raw/refs/heads/main/lib/charms/grafana_k8s/v0/grafana_dashboard.py"  # noqa: E501
+    grafana_lib_url = "https://github.com/canonical/grafana-k8s-operator/raw/refs/heads/main/lib/charms/grafana_k8s/v0/grafana_dashboard.py"
     grafana_lib = requests.get(grafana_lib_url, timeout=10).text
     grafana_lib = grafana_lib.replace(
         'DEFAULT_PEER_NAME = "grafana"', 'DEFAULT_PEER_NAME = "peer-any"'

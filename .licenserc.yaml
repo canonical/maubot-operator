@@ -2,29 +2,30 @@ header:
   license:
     spdx-id: Apache-2.0
     copyright-owner: Canonical Ltd.
-    content: |
-      Copyright [year] [owner]
+    pattern: |
+      Copyright \d{4} Canonical Ltd.
       See LICENSE file for licensing details.
   paths:
-    - '**'
+  - '**'
   paths-ignore:
-    - '.github/**'
-    - '.trivyignore'
-    - '.woke.yaml'
-    - '.woke.yml'
-    - '**/*.conf'
-    - '**/*.json'
-    - '**/*.md'
-    - '**/*.rule'
-    - '**/*.txt'
-    - '.jujuignore'
-    - '.gitignore'
-    - '.licenserc.yaml'
-    - 'CODEOWNERS'
-    - 'LICENSE'
-    - 'lib/**'
-    - 'maubot_rock/blackbox.yaml'
-    - 'trivy.yaml'
-    - 'pyproject.toml'
-    - 'zap_rules.tsv'
+  - '.github/**'
+  - '.trivyignore'
+  - '.woke.yaml'
+  - '.woke.yml'
+  - '**/*.conf'
+  - '**/*.json'
+  - '**/*.md'
+  - '**/*.rule'
+  - '**/*.txt'
+  - '.jujuignore'
+  - '.gitignore'
+  - '.licenserc.yaml'
+  - 'CODEOWNERS'
+  - 'LICENSE'
+  - 'lib/**'
+  - 'maubot_rock/blackbox.yaml'
+  - 'trivy.yaml'
+  - 'pyproject.toml'
+  - 'zap_rules.tsv'
+  - 'uv.lock'
   comment: on-failure

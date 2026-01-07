@@ -5,7 +5,7 @@
 #   in test_register_client_account_action_success
 # unused-argument: disabled because of side_effect
 #   in test_register_client_account_action_success
-# pylint: disable=protected-access, duplicate-code, line-too-long, unnecessary-pass, unused-argument  # noqa:E501,W505
+# pylint: disable=protected-access, duplicate-code, line-too-long, unnecessary-pass, unused-argument
 
 """Unit tests."""
 
@@ -236,7 +236,7 @@ def test_register_client_account_action_success(harness, monkeypatch):
             return MockResponse(
                 {
                     # ignoring E501 because this is a real return value
-                    "token": "c3SMnLi_XwIJr58xqQgBHQGHAVmF-p0iIK76nsrwVaA:eyJ1c2VyX2lkIjogImFtYW5kYSIsICJjcmVhdGVkX2F0IjogMTcyODQwODIwMX0"  # noqa: E501
+                    "token": "c3SMnLi_XwIJr58xqQgBHQGHAVmF-p0iIK76nsrwVaA:eyJ1c2VyX2lkIjogImFtYW5kYSIsICJjcmVhdGVkX2F0IjogMTcyODQwODIwMX0"
                 }
             )
         return MockResponse(
