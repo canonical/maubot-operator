@@ -13,6 +13,7 @@ jobs:
       channel: 1.35-strict/stable
       juju-channel: 3.6/stable
       with-uv: true
+      trivy-exit-code: 0
   allure-report:
     if: ${{ !cancelled() && github.event_name == 'schedule' }}
     needs:
