@@ -3,7 +3,7 @@
 
 resource "juju_application" "maubot" {
   name  = var.app_name
-  model = var.model
+  model = var.model_uuid
 
   charm {
     name     = "maubot"
