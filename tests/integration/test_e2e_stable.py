@@ -22,13 +22,9 @@ def juju_fixture():
 @pytest.mark.abort_on_fail
 async def test_deploy_stable(juju: jubilant.Juju):
     """Deploy Maubot and integrations"""
-    juju.deploy("maubot", channel="latest/stable")
-    juju.deploy("postgresql-k8s", channel="14/stable", trust=True)
-    juju.deploy(
-        "nginx-ingress-integrator",
-        channel="latest/stable",
-        trust=True,
-    )
+    juju.deploy("maubot", channel="latest/stable", log=False)
+    juju.deploy("postgresql-k8s", channel="14/stable", trust=True, log=False)
+    juju.deploy("nginx-ingress-integrator", channel="latest/stable", trust=True, log=False)
     assert juju.model
     juju.config(
         "nginx-ingress-integrator",
@@ -38,6 +34,7 @@ async def test_deploy_stable(juju: jubilant.Juju):
             "service-namespace": juju.model,
             "service-name": "maubot",
         },
+        log=False,
     )
     juju.wait(jubilant.all_agents_idle, timeout=600)
     juju.integrate("maubot", "postgresql-k8s")

@@ -35,7 +35,9 @@ async def test_build_and_deploy(
         Charm is still active after integrating it with Nginx and the request
         is successful.
     """
-    postgresql_k8s = await model.deploy("postgresql-k8s", channel="14/stable", trust=True)
+    postgresql_k8s = await model.deploy(
+        "postgresql-k8s", channel="14/stable", trust=True, log=False
+    )
     await model.wait_for_idle(timeout=900)
     await model.add_relation(application.name, postgresql_k8s.name)
     await model.wait_for_idle(timeout=900, status="active")
@@ -50,6 +52,7 @@ async def test_build_and_deploy(
             "service-name": "maubot",
         },
         trust=True,
+        log=False,
     )
     await model.add_relation(application.name, nginx_ingress_integrator.name)
 
@@ -107,6 +110,7 @@ async def test_cos_integration(model: Model):
         application_name=any_app_name,
         channel="beta",
         config={"src-overwrite": json.dumps(any_charm_src_overwrite), "python-packages": "cosl"},
+        log=False,
     )
 
     await model.add_relation(any_app_name, "maubot:grafana-dashboard")
@@ -154,6 +158,7 @@ async def test_loki_endpoint(ops_test: OpsTest, model: Model):  # pylint: disabl
         application_name=any_app_name,
         channel="beta",
         config={"src-overwrite": json.dumps(any_charm_src_overwrite), "python-packages": "cosl"},
+        log=False,
     )
 
     await model.add_relation(any_app_name, "maubot:logging")
@@ -380,6 +385,7 @@ async def test_register_client_account_action_success(unit: Unit, model: Model):
             "server_name": matrix_server_name,
             "public_baseurl": "http://synapse-0.synapse-endpoints.testing.svc.cluster.local:8080/",
         },
+        log=False,
     )
     await model.wait_for_idle(status="active")
     await model.add_relation("synapse:matrix-auth", "maubot:matrix-auth")

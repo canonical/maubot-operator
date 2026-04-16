@@ -68,7 +68,7 @@ async def maubot_application_fixture(
     """Deploy the maubot charm."""
     maubot_image = pytestconfig.getoption("--maubot-image")
     assert maubot_image
-    maubot = await model.deploy(f"./{charm}", resources={"maubot-image": maubot_image})
+    maubot = await model.deploy(f"./{charm}", resources={"maubot-image": maubot_image}, log=False)
 
     await model.wait_for_idle(timeout=600, status="blocked")
 
