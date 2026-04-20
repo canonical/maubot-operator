@@ -1,9 +1,19 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "automerge": true,
+  "customDatasources": {
+    "charmhub": {
+      "defaultRegistryUrlTemplate": "https://api.charmhub.io/v2/charms/info/{{packageName}}?fields=channel-map",
+      "format": "json",
+      "transformTemplates": [
+        "{\"releases\": [{\"version\": $string($$.(`channel-map`[channel.risk = 'edge' and channel.track = 'latest' and channel.base.architecture = 'amd64' and channel.base.channel = '24.04'].revision.revision))}]}"
+      ]
+    }
+  },
   "extends": [
     "config:base"
   ],
+  "ignorePaths": [],
   "packageRules": [
     {
       "enabled": true,
@@ -11,6 +21,13 @@
         "docker"
       ],
       "pinDigests": true
+    },
+    {
+      "automerge": true,
+      "enabled": true,
+      "matchDatasources": [
+        "custom.charmhub"
+      ]
     }
   ],
   "regexManagers": [
@@ -53,6 +70,18 @@
         "blackbox_exporter-(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
       "matchStringsStrategy": "any",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "custom.charmhub",
+      "fileMatch": [
+        "\\.tftest\\.hcl$",
+        "\\.tf$"
+      ],
+      "matchStrings": [
+        "# renovate: depName=\"(?<packageName>[^\"]+)\"\\s*\\n\\s*(?<fieldName>[a-zA-Z0-9_]+)\\s*=\\s*(?<currentValue>\\d+)"
+      ],
       "versioningTemplate": "semver-coerced"
     }
   ],
