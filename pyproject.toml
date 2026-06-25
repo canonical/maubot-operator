@@ -17,7 +17,7 @@ classifiers = [
 ]
 dependencies = [
   "cosl==1.9.2",
-  "ops==3.7.0",
+  "ops==3.7.1",
   "pydantic==2.13.4",
   "requests==2.34.2",
 ]
