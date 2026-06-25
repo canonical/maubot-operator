@@ -19,7 +19,7 @@ dependencies = [
   "cosl==1.9.1",
   "ops==3.7.0",
   "pydantic==2.13.4",
-  "requests==2.33.1",
+  "requests==2.34.2",
 ]
 
 [dependency-groups]
